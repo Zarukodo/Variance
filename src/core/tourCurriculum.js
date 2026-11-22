@@ -1,227 +1,313 @@
 /**
- * 新手教學引導課程表（12 步建立完整空間直覺）
- * 目標：帶零基礎學習者從「槓桿重心」一路建立到「二項路徑與 √n 尺度」，
- * 每一步皆同步驅動 3D 舞台、動畫與對比實驗，讓大腦先看見形狀再看懂公式。
+ * 新手互動教學引導課程表 V3.0（15 步聚光燈減法故事流）
+ * 依據《人類專注力與認知負荷測試筆記》全面重構：
+ * - 每一步只露出當下相關的最少 3D 元素與右側控制項，徹底避免劇透與多區搶焦點
+ * - 消除與畫面按鈕重複的雙胞胎按鈕，統一以唯一發光焦點引導視線
  */
 
 import { DATASET_PRESETS } from './presets.js';
 
 function getPresetBeads(id) {
   const found = DATASET_PRESETS.find((p) => p.id === id);
-  return found ? found.beads.map((b) => ({ ...b })) : [{ id: 'b0', x: 2, p: 0.2 }];
+  return found ? found.beads.map((b) => ({ ...b })) : [{ id: 'b0', x: 2, p: 0.2, rawWeight: 20 }];
 }
 
 export const TOUR_CHAPTERS = Object.freeze([
-  { id: 'lever', label: '1. 重心與張力', startStep: 0 },
-  { id: 'collapse', label: '2. 雙珠塌縮', startStep: 3 },
-  { id: 'sd', label: '3. 股票與尺規', startStep: 4 },
-  { id: 'cut', label: '4. 原點一刀切', startStep: 7 },
-  { id: 'web', label: '5. 對立引力網', startStep: 9 },
-  { id: 'binom', label: '6. 路徑與 √n', startStep: 10 }
+  { id: 'lever', label: '1.重心', startStep: 0 },
+  { id: 'collapse', label: '2.塌縮', startStep: 3 },
+  { id: 'sd', label: '3.尺規', startStep: 5 },
+  { id: 'cut', label: '4.一刀切', startStep: 8 },
+  { id: 'web', label: '5.引力網', startStep: 11 },
+  { id: 'binom', label: '6.組合√n', startStep: 12 },
+  { id: 'quiz', label: '7.盲測', startStep: 14 }
 ]);
 
 export const TOUR_STEPS = [
   {
-    id: 'step-1-lever',
-    chapter: '1. 重心與張力',
-    title: '先把「平均數 μ」想成一根翹翹板的支點',
-    mentalImage: '左邊 0 號位站了 70% 的珠子，右邊 1 號位只有 30% 的珠子。',
-    body: '先忘掉課本公式！把數線當成翹翹板，發生機率就是重量。為了不讓較重的左邊壓垮板子，黃金支點 μ 必須往左移動，精準停在 0.30 才能維持水平平衡。',
+    id: 'v3-step-1-lever',
+    chapter: '1.重心',
+    title: '為什麼 70% 在 0 號位，重心 μ 卻是 0.30？',
+    mentalImage: '只看翹翹板：左邊 0 號位比較重（70%），支點必須往重端靠，停在 0.30！',
+    body: '先忘掉公式（我們也先把上方方柱藏起來）。把數線想成翹翹板：重的那端「力臂短」、輕的那端「力臂長」，看下方乘積：左 0.70×0.30 = 右 0.30×0.70 = 0.21，剛好平衡！試著拖右側滑桿看看支點怎麼跟著跑。',
+    panelPolicy: { showFormula: false, showControlPanel: false, showDashboard: false, mod1Scope: ['pi'] },
     enter({ store, getActiveModule }) {
       store.setState({
         activeModule: 'mod1',
         bernoulliPi: 0.3,
         pivotOverride: null,
         cameraMode: 'perspective',
+        formulaMode: 'symbolic',
         hoveredToken: null
       });
-      setTimeout(() => getActiveModule()?.setCollapsed?.(false, true), 30);
+      setTimeout(() => {
+        const mod = getActiveModule();
+        mod?.setCollapsed?.(false, true);
+        mod?.setPrismsVisible?.(false);
+      }, 20);
     }
   },
   {
-    id: 'step-2-tilt',
-    chapter: '1. 重心與張力',
-    title: '為什麼不能隨便選一個中心點？（支點破壞實驗）',
-    mentalImage: '刻意把黃金支點往右推到 0.70，翹翹板歪了、上方方柱也膨脹了。',
-    body: '我們硬把支點推歪到 a = 0.70，翹翹板立刻傾斜，上方用來衡量「離散張力」的方柱總體積也從 0.2100 膨脹成 0.3700！平均數 μ 的真正意義，是全宇宙唯一讓「總偏離體積最小」的平衡點。',
+    id: 'v3-step-2-tilt',
+    chapter: '1.重心',
+    title: '把支點推歪會怎樣？（為什麼平均數 μ 不可取代）',
+    mentalImage: '支點硬推到 0.70 時，翹翹板歪了，上方出現的「離散方柱」也膨脹了！',
+    body: '現在讓方柱現身並把支點推歪到 a = 0.70：不僅翹翹板歪斜，上方測量離散程度的方柱總體積 I(a) 也從 0.2100 膨脹成 0.3700。試試右側滑桿回推到 0.30，你會發現只有 μ 能讓總體積縮到最小！',
+    panelPolicy: { showFormula: true, showControlPanel: false, showDashboard: false, mod1Scope: ['pivot'] },
     enter({ store, getActiveModule }) {
       store.setState({
         activeModule: 'mod1',
         bernoulliPi: 0.3,
         pivotOverride: 0.7,
         cameraMode: 'perspective',
+        formulaMode: 'symbolic',
         hoveredToken: null
       });
-      setTimeout(() => getActiveModule()?.setCollapsed?.(false, true), 30);
+      setTimeout(() => {
+        const mod = getActiveModule();
+        mod?.setPrismsVisible?.(true);
+        mod?.setCollapsed?.(false, true);
+      }, 20);
     }
   },
   {
-    id: 'step-3-volume',
-    chapter: '1. 重心與張力',
-    title: '變異數 σ² 就是「張力方柱」的總體積',
-    mentalImage: '先在地板用「距離 × 距離」畫正方形，再乘上自身機率高度向上長高。',
-    body: '直接算有正有負的距離會互殺成 0，所以我們在地板畫「距離²」的正方形抹除正負號，再把每顆珠子的出現機率當成高度拉出 3D 積木（看亮起的稜邊標籤）。所有方柱體積加總，就是變異數 σ²！',
+    id: 'v3-step-3-volume',
+    chapter: '1.重心',
+    title: '變異數 σ² 就是 3D「張力方柱」的總體積',
+    mentalImage: '在地板畫「距離 × 距離」正方形抹掉正負號，再把「發生機率」當高度拉高。',
+    body: '只算正負距離會互殺成 0，所以先在地板畫出「距離²」正方形，再乘上各自出現機率 P(x) 向上長出 3D 積木（看亮起的三邊尺寸）。兩塊方柱的體積加起來，就是變異數 σ² = 0.21！',
+    panelPolicy: { showFormula: true, showControlPanel: false, showDashboard: false, mod1Scope: ['narration'] },
     enter({ store, getActiveModule }) {
       store.setState({
         activeModule: 'mod1',
         bernoulliPi: 0.3,
         pivotOverride: null,
         cameraMode: 'perspective',
+        formulaMode: 'numeric',
         hoveredToken: 'bead0'
       });
-      setTimeout(() => getActiveModule()?.setCollapsed?.(false, true), 30);
+      setTimeout(() => {
+        const mod = getActiveModule();
+        mod?.setPrismsVisible?.(true);
+        mod?.setCollapsed?.(false, true);
+      }, 20);
     }
   },
   {
-    id: 'step-4-collapse',
-    chapter: '2. 雙珠塌縮',
-    title: '為什麼單次成功/失敗，課本只寫成扁平的 π(1−π)？',
-    mentalImage: '兩塊 3D 積木各翻轉 90°，竟然剛好縫合成一塊「厚度 = 1.00」的卡片！',
-    body: '並非單次二項沒有機率高度，而是 0 與 1 跨距剛好為 1，翻轉拼合後垂直厚度 π + (1−π) 恰好縫合成 1.00！試試點右側按鈕切換「2D 俯視」，厚度 1 隱身在視線裡，體積數值就跟 2D 面積重疊了。',
+    id: 'v3-step-4-myth-quiz',
+    chapter: '2.塌縮',
+    title: '先猜猜看：扭蛋 20% 中獎 vs 公平硬幣 50%，誰比較難猜（變異數大）？',
+    mentalImage: '先別看數字！想像 0.20 × 0.80 的細長條，與 0.50 × 0.50 的正方形誰比較大？',
+    body: '很多新手以為「20% 很偏很極端，變異數比較大吧？」我們已先把右側公式鎖住不劇透，請先點下方一個猜測再看結果！',
+    panelPolicy: { showFormula: false, showControlPanel: false, showDashboard: false, mod1Scope: [] },
     enter({ store, getActiveModule }) {
       store.setState({
         activeModule: 'mod1',
-        bernoulliPi: 0.3,
+        bernoulliPi: 0.2,
         pivotOverride: null,
         cameraMode: 'perspective',
-        hoveredToken: 'collapsed'
+        formulaMode: 'geometric',
+        hoveredToken: null
       });
-      setTimeout(() => getActiveModule()?.setCollapsed?.(false, true), 20);
-      setTimeout(() => getActiveModule()?.setCollapsed?.(true, false), 140);
+      setTimeout(() => {
+        const mod = getActiveModule();
+        mod?.setPrismsVisible?.(true);
+        mod?.setCollapsed?.(false, true);
+      }, 20);
     },
-    action: {
-      label: '切換 2D 俯視（正交錯覺）',
-      altLabel: '切回 3D 透視看厚度 1.00',
-      isActive: (state) => state.cameraMode === 'orthographic',
-      run({ store }) {
-        const next = store.getState().cameraMode === 'orthographic' ? 'perspective' : 'orthographic';
-        store.setCameraMode(next);
+    quiz: {
+      question: '猜猜看：哪一個的不確定性（變異數 σ²）比較大？',
+      options: [
+        { id: 'gacha', label: '扭蛋 20%（比較偏）', correct: false },
+        { id: 'coin', label: '公平硬幣 50%（最難猜）', correct: true }
+      ],
+      feedbackCorrect: '✓ 答對了！50/50 最難猜，正方形 0.50×0.50 = 0.25 最大；20% 大多穩落在 0 那邊，面積只有 0.16！',
+      feedbackWrong: '其實剛好相反！看積木與右側尺寸：20% 時大多穩落在 0（0.20×0.80 = 0.16）；50/50 最難猜、面積 0.25 最大！',
+      onPick(optionId, { store, applyPanelPolicy }) {
+        store.setState({ bernoulliPi: optionId === 'coin' ? 0.5 : 0.2, pivotOverride: null });
+        applyPanelPolicy({ showFormula: true, showControlPanel: false, showDashboard: false, mod1Scope: ['presets', 'narration'] });
       }
     }
   },
   {
-    id: 'step-5-stock-a',
-    chapter: '3. 股票與尺規',
-    title: '只看平均數的陷阱：先看穩健的「股票 A」',
-    mentalImage: '報酬集中在 4、5、6 元，方柱緊貼重心、個頭小小一團。',
-    body: '離開只有 0 與 1 的世界，我們來到多珠系統。股票 A 平均報酬 μ = 5 元，大家距離重心都很近，方柱總體積只有 0.50，這代表風險極低。記住這個小方柱畫面，下一步我們要看反差！',
+    id: 'v3-step-5-collapse',
+    chapter: '2.塌縮',
+    title: '兩塊不同形狀積木，怎麼翻轉 90° 就縫合成「厚度 1.00」？',
+    mentalImage: '看閃爍的綠色側面：兩塊其實各自都有一面剛好是 0.30 × 0.70！',
+    body: '看右側「積木長寬高」：0 號珠 [0.30×0.30×0.70] 與 1 號珠 [0.70×0.70×0.30] 都有一面 0.30×0.70！翻轉疊合後總厚恰好 1.00。現在請點擊舞台右上角發光的「從正上方平看 (2D 面積)」，看厚度 1 如何隱身在視線裡！',
+    spotlightSelector: '#btn-camera-mode',
+    panelPolicy: { showFormula: true, showControlPanel: false, showDashboard: false, mod1Scope: ['collapse', 'narration'] },
+    enter({ store, getActiveModule }) {
+      store.setState({
+        activeModule: 'mod1',
+        bernoulliPi: 0.3,
+        pivotOverride: null,
+        cameraMode: 'perspective',
+        formulaMode: 'geometric',
+        hoveredToken: 'collapsed'
+      });
+      setTimeout(() => {
+        const mod = getActiveModule();
+        mod?.setPrismsVisible?.(true);
+        mod?.setCollapsed?.(false, true);
+        setTimeout(() => mod?.setCollapsed?.(true, false), 60);
+      }, 20);
+    }
+  },
+  {
+    id: 'v3-step-6-stocks',
+    chapter: '3.尺規',
+    title: '只看平均數會害你買錯股票：股票 A {4,5,6} vs 股票 B {0,10}',
+    mentalImage: '兩支股票平均都賺 5 元，但股票 B 兩端拉遠 5 倍，平方後體積暴增 50 倍！',
+    body: '離開只有 0 與 1 的世界來到多珠系統：股票 A 緊貼重心（σ² = 0.50）。點擊下方對比鈕切換成股票 B {0, 10}，同樣平均 μ = 5，方柱卻暴衝到 σ² = 25.00——這就是風險的空間形狀！',
+    panelPolicy: { showFormula: true, showControlPanel: false, showDashboard: false, mod2Scope: ['narration'] },
     enter({ store, getActiveModule }) {
       store.setState({
         activeModule: 'mod2',
         cameraMode: 'perspective',
+        formulaMode: 'numeric',
         pivotOverride: null,
         hoveredToken: null,
         beads: getPresetBeads('stock_a')
       });
-      setTimeout(() => getActiveModule()?.setRecast?.(false, true), 40);
-    }
-  },
-  {
-    id: 'step-6-stock-b',
-    chapter: '3. 股票與尺規',
-    title: '同樣平均 μ = 5，暴走「股票 B」體積暴增 50 倍！',
-    mentalImage: '翹翹板支點一樣在 5，但珠子拉開到 0 與 10，地板正方形瞬間炸大。',
-    body: '股票 B 一半賠光 (0)、一半大賺 (10)，平均一樣是 5 元！但因為距離拉大 5 倍、平方後底面積暴增 25 倍，總變異數飆升至 25.00。這就是為什麼「平均相同，風險卻天差地遠」。',
-    enter({ store, getActiveModule }) {
-      store.setState({
-        activeModule: 'mod2',
-        cameraMode: 'perspective',
-        pivotOverride: null,
-        hoveredToken: null,
-        beads: getPresetBeads('stock_b')
-      });
-      setTimeout(() => getActiveModule()?.setRecast?.(false, true), 40);
+      setTimeout(() => getActiveModule()?.setRecast?.(false, true), 20);
     },
     action: {
-      label: '切回股票 A {4,5,6} 對比',
-      altLabel: '切回暴走股票 B {0,10}',
-      isActive: (state) => state.beads.length === 3,
+      label: '切換成暴走股票 B {0, 10} 對比！',
+      altLabel: '切回穩健股票 A {4, 5, 6}',
+      isActive: (state) => state.beads.length === 2 && state.beads[0].x === 0,
       run({ store }) {
-        const isA = store.getState().beads.length === 3;
+        const isB = store.getState().beads.length === 2 && store.getState().beads[0].x === 0;
         store.setState({
-          beads: getPresetBeads(isA ? 'stock_b' : 'stock_a'),
+          beads: getPresetBeads(isB ? 'stock_a' : 'stock_b'),
           pivotOverride: null
         });
       }
     }
   },
   {
-    id: 'step-7-recast-sd',
-    chapter: '3. 股票與尺規',
-    title: '標準差 σ：把變異數體積「開根號」壓回一把尺',
-    mentalImage: '把散落方柱融化重鑄成「厚度 1 的正方形」，再撕下底邊當成紫羅蘭尺規。',
-    body: '變異數是平方後的面積／體積，單位跟原分數不同。看舞台中央動畫：我們把所有方柱壓成厚度 1 的正方形薄板，開根號就是取它的「邊長 σ = 1.40」，變成掛在重心左右 μ ± σ 的一維尺規！',
+    id: 'v3-step-7-recast-sd',
+    chapter: '3.尺規',
+    title: '標準差 σ：把不同高度的方柱，重鑄壓回一把「1D 尺規」',
+    mentalImage: '三根方柱融進「厚度 1.00」的正方形模具，開根號就是取邊長 σ = 1.40！',
+    body: '看舞台正在自動重鑄：把 {2, 4, 6} 的三塊方柱融進厚度 1.00 的正方形模具，面積 1.96 開根號得到邊長 σ = 1.40 掛在 μ ± σ！記住：μ ± σ 只是「典型波動寬度」尺規，不保證包住所有資料或佔 68%。',
+    panelPolicy: { showFormula: true, showControlPanel: false, showDashboard: false, mod2Scope: ['recast', 'narration'] },
     enter({ store, getActiveModule }) {
       store.setState({
         activeModule: 'mod2',
         cameraMode: 'perspective',
+        formulaMode: 'geometric',
         pivotOverride: null,
         hoveredToken: 'sigma',
         beads: getPresetBeads('small_int')
       });
-      setTimeout(() => getActiveModule()?.setRecast?.(false, true), 20);
-      setTimeout(() => getActiveModule()?.setRecast?.(true, false), 140);
+      setTimeout(() => {
+        const mod = getActiveModule();
+        mod?.setRecast?.(false, true);
+        setTimeout(() => mod?.setRecast?.(true, false), 40);
+      }, 20);
     }
   },
   {
-    id: 'step-8-origin-build',
-    chapter: '4. 原點一刀切',
-    title: '捷徑版 Σx²P(x) − μ²：先從 0 號原點暴力蓋大柱',
-    mentalImage: '懶得先算重心距離？那就直接用座標 2、4、6 蓋出三根超大柱子。',
-    body: '實戰計算時若先求 μ 再減很麻煩，於是改從原點 0 出發直接蓋出 Σx²P(x) = 19.60！不過這些大柱比我們要的變異數大很多，到底多蓋了什麼？按「下一步」用十字雷射切開它！',
+    id: 'v3-step-8-bridge-origin',
+    chapter: '3.尺規',
+    title: '關鍵伏筆：把支點一路推到原點 a = 0，多出來的體積就是 μ²！',
+    mentalImage: '支點偏離重心多少，總體積就多膨脹 (μ − a)²。推到 a = 0 剛好就是膨脹 μ²！',
+    body: '看右側的支點破壞實驗：支點推到原點 a = 0 時，槓桿歪斜、總體積膨脹為 I(0) = σ² + μ²（1.96 + 4.2² = 19.60）。記住這條線索，下一站「原點一刀切」就是把這多出來的 μ² 切掉！',
+    spotlightSelector: '[data-role="btn-mod2-push-origin"]',
+    panelPolicy: { showFormula: true, showControlPanel: false, showDashboard: false, mod2Scope: ['pivot', 'narration'] },
+    enter({ store, getActiveModule }) {
+      store.setState({
+        activeModule: 'mod2',
+        cameraMode: 'perspective',
+        formulaMode: 'numeric',
+        pivotOverride: 0,
+        hoveredToken: null,
+        beads: getPresetBeads('small_int')
+      });
+      setTimeout(() => getActiveModule()?.setRecast?.(false, true), 20);
+    }
+  },
+  {
+    id: 'v3-step-9-origin-build',
+    chapter: '4.一刀切',
+    title: '捷徑版（第 1 步）：先從原點 0 暴力蓋出大柱 Σx²P(x)',
+    mentalImage: '懶得先求重心距離，直接用座標 2、4、6 蓋出三根總體積 19.60 的大柱子。',
+    body: '這就是剛才在模組 2 把支點放到 a = 0 所產生的總體積 19.60！現在我們要把這些大柱子切開，親眼看看多出來的 17.64 到底藏在哪裡。',
+    panelPolicy: { showFormula: true, showControlPanel: false, showDashboard: false },
     enter({ store }) {
       store.setState({
         activeModule: 'mod3',
         mod3SubMode: 'general',
         timelineStep: 0,
+        formulaMode: 'numeric',
         hoveredToken: null,
         beads: getPresetBeads('small_int')
       });
     }
   },
   {
-    id: 'step-9-origin-cut',
-    chapter: '4. 原點一刀切',
-    title: '十字拆解：側翼對撞蒸發，紅雷射一刀削去底座 μ²',
-    mentalImage: '每個大柱切出黃金底座 μ²、兩條正負側翼，與角落翠綠純偏差 d²。',
-    body: '看舞台上 x=2（小於重心）的紫羅蘭幽靈負側翼，與 x=6 的翠綠正側翼：點右側「推進到對撞並切割」你會看見正負側翼空中互殺歸零，金色 μ² 疊滿高度 1.00 後被一刀削走，只剩純變異數 1.96！',
+    id: 'v3-step-10-origin-explode',
+    chapter: '4.一刀切',
+    title: '捷徑版（第 2 步）：十字切開，認識「幽靈負側翼」與排容',
+    mentalImage: '每個大柱拆出金色底座 μ²、兩條側翼 2μdᵢ，與角落翠綠純偏差 dᵢ²。',
+    body: '當珠子小於重心（如 x=2 與 x=4），dᵢ 是負的，兩條紫羅蘭負側翼上浮；因為從 μ² 扣掉兩條負側翼會把角落重複扣兩次，所以角落 dᵢ² 必須加回一塊翠綠實心正塊！',
+    panelPolicy: { showFormula: true, showControlPanel: false, showDashboard: false },
     enter({ store }) {
       store.setState({
         activeModule: 'mod3',
         mod3SubMode: 'general',
         timelineStep: 1,
+        formulaMode: 'numeric',
         hoveredToken: null,
         beads: getPresetBeads('small_int')
       });
+    }
+  },
+  {
+    id: 'v3-step-11-origin-cut',
+    chapter: '4.一刀切',
+    title: '捷徑版（第 3→4 步）：正負側翼互殺蒸發，紅雷射切離 μ² 底座！',
+    mentalImage: '側翼空中對撞歸零，金色 μ² 疊滿高度 1.00 後被紅雷射一刀切離，只剩 σ² = 1.96！',
+    body: '看舞台自動播放第 3→4 步：正負側翼對撞蒸發成 0；所有金色 μ² 底座沿右側機率刻度尺疊滿 1.00 後被紅雷射水平切走，檯面只剩純變異數 1.96！',
+    panelPolicy: { showFormula: true, showControlPanel: false, showDashboard: false },
+    enter({ store }) {
+      store.setState({
+        activeModule: 'mod3',
+        mod3SubMode: 'general',
+        timelineStep: 2,
+        formulaMode: 'numeric',
+        hoveredToken: null,
+        beads: getPresetBeads('small_int')
+      });
+      setTimeout(() => {
+        if (store.getState().activeModule === 'mod3') {
+          store.setState({ timelineStep: 3 });
+        }
+      }, 1550);
     },
     action: {
-      label: '▶ 推進步驟：對撞蒸發 → 雷射切割',
-      altLabel: '↺ 回到第 2 步爆炸視圖',
-      isActive: (state) => state.timelineStep >= 3,
+      label: '↺ 重看第 3 步對撞 → 第 4 步切割',
       run({ store }) {
-        const step = store.getState().timelineStep;
-        if (step >= 3) {
-          store.setState({ timelineStep: 1 });
-        } else {
-          store.setState({ timelineStep: 2 });
-          setTimeout(() => {
-            if (store.getState().activeModule === 'mod3') {
-              store.setState({ timelineStep: 3 });
-            }
-          }, 1500);
-        }
+        store.setState({ timelineStep: 2 });
+        setTimeout(() => {
+          if (store.getState().activeModule === 'mod3') {
+            store.setState({ timelineStep: 3 });
+          }
+        }, 1550);
       }
     }
   },
   {
-    id: 'step-10-gravity-web',
-    chapter: '5. 對立引力網',
-    title: '隱藏平均數：沒有「對立面」，就沒有偏差！',
-    mentalImage: '全班考同分 80 分時一片死寂；一旦拉開差距，兩兩之間立刻繃出張力光束。',
-    body: '其實變異數根本不依賴「平均數」這個人造座標！全班都考 80 分時無人對立，引力網全滅；點擊右側按鈕把一半同學拉開成 {60, 100}（或直接在 3D 地板左右拖曳球體），你會看見兩端脈衝在中點融合（公式 ½ 的由來）！',
+    id: 'v3-step-12-gravity-web',
+    chapter: '5.引力網',
+    title: '隱藏平均數：沒有「對立面」，就沒有偏差（破解 ½ 謎團）',
+    mentalImage: '全班考 80 分時一片死寂；拉開成 {60, 100} 後，兩端脈衝在幾何中點融合。',
+    body: '變異數其實不靠 μ 也能算！點下方把全班拉開成 {60, 100}（或直接拖曳球體）：雙重加總算了兩次配對，乘 ½ 讓脈衝在「幾何中點」融合——注意中點融合只代表去重 (×½)，不等於加權重心 μ！',
+    panelPolicy: { showFormula: true, showControlPanel: false, showDashboard: false },
     enter({ store }) {
       store.setState({
         activeModule: 'mod4',
+        formulaMode: 'symbolic',
         hoveredToken: null,
         beads: getPresetBeads('class_same')
       });
@@ -239,48 +325,69 @@ export const TOUR_STEPS = [
     }
   },
   {
-    id: 'step-11-comb-tear',
-    chapter: '6. 路徑與 √n',
-    title: '為什麼組合數 C(n, x) 要除以 x!，而不是除以 x？',
-    mentalImage: '罰球 4 球進 2 球：原本貼著「①、②」編號的 2! 條排列，撕掉標籤後其實一模一樣！',
-    body: '看上方路徑區：選出 2 個成功格後，因為我們不在乎「誰先投進」，原本 ✓1✓2 與 ✓2✓1 這 x! = 2! 種內部編號其實是同一條路徑！試著點右側「幫我撕掉順序標籤」，親眼看它們折疊成 1 條。',
+    id: 'v3-step-13-comb-tear',
+    chapter: '6.組合√n',
+    title: '撕掉順序標籤：為何 C(n, x) 要除以 x!，而不是除以 x？',
+    mentalImage: '選出 3 個成功格時，內部有「①②③、①③②…」共 3! = 6 種重複編號，不只是 3 種！',
+    body: '我們已切換到「① 路徑為何除 x!」單一焦點（暫時收起 3D 讓眼睛休息）：在 n=5 投進 x=3 球時，同一組 3 格有 3! = 6 種排列。點擊上方發光的「撕掉順序標籤」，看 6 條如何折疊為 1 條！',
+    spotlightSelector: '[data-role="btn-tear-labels"]',
+    panelPolicy: { showFormula: false, showControlPanel: false, showDashboard: false },
     enter({ store, getActiveModule }) {
       store.setState({
         activeModule: 'mod5',
-        binomialN: 4,
-        binomialX: 2,
-        bernoulliPi: 0.7,
+        mod5Focus: 'comb',
+        binomialN: 5,
+        binomialX: 3,
+        bernoulliPi: 0.5,
         showAtLeastOne: false,
         hoveredToken: 'comb'
       });
       setTimeout(() => getActiveModule()?.setLabelsTorn?.(false), 30);
+    }
+  },
+  {
+    id: 'v3-step-14-sqrt-n',
+    chapter: '6.組合√n',
+    title: '平方數實驗：看 n = 4 vs 9 次時，總次數 X 的變異數 ×n vs 標準差 ×√n',
+    mentalImage: '投 9 球就在舞台並排 9 塊方塊（總體積變 9 倍），但正方形開根號邊長只變 √9 = 3 倍！',
+    body: '現在切換到全螢幕 3D 舞台專心看倍率（π = 0.50）：n = 4 時 4 塊積木讓「總成功次數 X」變異數 σ² = 1.00（×4），尺規 σ = 1.00（×2）；點下方切換 n = 9，體積暴增 9 倍，但尺規只放大 √9 = 3 倍（注意平均命中率 X/n 反而會縮小為 1/√n）！',
+    panelPolicy: { showFormula: false, showControlPanel: false, showDashboard: false },
+    enter({ store }) {
+      store.setState({
+        activeModule: 'mod5',
+        mod5Focus: 'scaling',
+        binomialN: 4,
+        binomialX: 2,
+        bernoulliPi: 0.5,
+        showAtLeastOne: false,
+        hoveredToken: 'sd_n'
+      });
     },
     action: {
-      label: '幫我撕掉順序標籤試試！',
-      altLabel: '貼回 ①② 順序標籤對照',
-      isActive: ({ getActiveModule }) => Boolean(getActiveModule()?._labelsTorn),
-      run({ getActiveModule }) {
-        const mod = getActiveModule();
-        if (mod && typeof mod.setLabelsTorn === 'function') {
-          mod.setLabelsTorn(!mod._labelsTorn);
-        }
+      label: '切換成 n = 9 比較（×9 vs ×3）',
+      altLabel: '切回 n = 4 比較（×4 vs ×2）',
+      isActive: (state) => state.binomialN === 9,
+      run({ store }) {
+        const is9 = store.getState().binomialN === 9;
+        store.setState({
+          binomialN: is9 ? 4 : 9,
+          binomialX: is9 ? 2 : 4,
+          bernoulliPi: 0.5
+        });
       }
     }
   },
   {
-    id: 'step-12-sqrt-n',
-    chapter: '6. 路徑與 √n',
-    title: '獨立重複 n 次：變異數放大 n 倍，標準差只放大 √n 倍',
-    mentalImage: '每多投一球，就像在舞台上多並排 1 塊單次塌縮長方體。',
-    body: '看向下方 3D 舞台：投 6 球時，6 塊獨立的單次塌縮長方體並排站立，總體積（變異數 σ²）線性放大 6 倍；但開根號回到紫羅蘭 1D 尺規時，邊長只放大 √6 ≈ 2.45 倍！恭喜你，已掌握統計學最重要的空間直覺！',
+    id: 'v3-step-15-graduation',
+    chapter: '7.盲測',
+    title: '🎯 畢業挑戰：先自己手算預測，再用 3D 舞台開獎驗算！',
+    mentalImage: '遮住答案算算看：只要算得出 μ、σ²、σ 與路徑數，就代表大腦真的建好模型了！',
+    body: '最後一關我們把算式先遮起來！試試看用剛才建立的空間畫面，在右側手算填入「題型 A（{0, 3, 9}）」與「題型 B（n=5, π=0.2）」的預測值，按下「揭曉答案並在 3D 舞台驗證」看自己是不是一發命中！',
+    panelPolicy: { showFormula: false, showControlPanel: false, showDashboard: false },
     enter({ store }) {
       store.setState({
-        activeModule: 'mod5',
-        binomialN: 6,
-        binomialX: 3,
-        bernoulliPi: 0.5,
-        showAtLeastOne: false,
-        hoveredToken: 'sd_n'
+        activeModule: 'mod6',
+        hoveredToken: null
       });
     }
   }

@@ -1,31 +1,32 @@
 /**
  * 單一真相來源（State + Pub/Sub 事件匯流排）
+ * V3.0：預設採教學引導模式（漸進揭露），跨站同步預設關閉以維持各站乾淨起點
  */
 
 import { normalizeBeads } from './mathEngine.js';
 
 export const initialState = {
-  activeModule: 'mod1',       // 'mod1' | 'mod2' | 'mod3' | 'mod4' | 'mod5'
-  cameraMode: 'perspective',  // 'perspective' | 'orthographic'
-  formulaMode: 'symbolic',    // 'symbolic' | 'numeric' | 'geometric'
-  lockDataset: true,          // 開啟時，模組 2/3/4 切換共享同一組珠子數據
+  activeModule: 'mod1',            // 'mod1' | 'mod2' | 'mod3' | 'mod4' | 'mod5' | 'mod6'
+  uiMode: 'guided',                // 'guided' | 'sandbox'
+  showVerificationTable: false,    // 驗算表預設收合
+  cameraMode: 'perspective',       // 'perspective' | 'orthographic'
+  formulaMode: 'symbolic',         // 'symbolic' | 'numeric' | 'geometric'
+  lockDataset: false,              // V3.0 預設關閉：各站維持乾淨獨立起點，需要時可開啟跨站同步
 
-  // 通用多珠資料集（每次修改自動正規化，確保機率總和為 1）
   beads: [
-    { id: 'b0', x: 2, p: 0.2 },
-    { id: 'b1', x: 4, p: 0.5 },
-    { id: 'b2', x: 6, p: 0.3 }
+    { id: 'b0', x: 2, p: 0.2, rawWeight: 20 },
+    { id: 'b1', x: 4, p: 0.5, rawWeight: 50 },
+    { id: 'b2', x: 6, p: 0.3, rawWeight: 30 }
   ],
-  pivotOverride: null,        // null = 鎖定在重心 μ；數值 = 手動拖歪的支點 a
+  pivotOverride: null,
 
-  // 二項分佈專用參數
   bernoulliPi: 0.3,
   binomialN: 4,
   binomialX: 2,
   showAtLeastOne: false,
+  mod5Focus: 'comb',               // 'comb' (路徑與除 x!) | 'scaling' (3D ×n vs ×√n)
 
-  // 互動與動畫狀態
-  mod3SubMode: 'general',     // 'general' | 'bernoulli'
+  mod3SubMode: 'general',          // 'general' | 'bernoulli'
   timelineStep: 0,
   hoveredToken: null
 };

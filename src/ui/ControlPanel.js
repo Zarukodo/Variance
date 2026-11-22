@@ -1,22 +1,17 @@
 /**
- * 共用控制面板元件（實戰劇本下拉選單、自訂珠子編輯器、跨模組數據鎖定）
- * 供模組 2、3、4 共用，修改權重後自動正規化確保 ΣP(x) = 1
+ * 共用題目與珠子編輯器（V3.0 折疊減壓版）
+ * - 預設收合為精簡 1 行「目前題目：... ｜ 更換題目或自訂珠子 ▾」，絕不把模組核心實驗擠出螢幕外
+ * - 內部採用獨立份數／權重輸入框 + 即時換算百分比，輸入 50 / 25 / 25 絕不飄移
  */
 
 import { DATASET_PRESETS, BEAD_PALETTE } from '../core/presets.js';
 
 export class ControlPanel {
-  /**
-   * @param {HTMLElement} container
-   * @param {import('../core/store.js').store} store
-   * @param {{ allowNegative?: boolean }} [opts]
-   */
   constructor(container, store, opts = {}) {
     this.container = container;
     this.store = store;
     this.allowNegative = opts.allowNegative ?? true;
     this._abortController = new AbortController();
-    this._activePresetId = 'small_int';
     this._renderScaffold();
     this._bindEvents();
     this.update(this.store.getState());
@@ -24,39 +19,55 @@ export class ControlPanel {
 
   _renderScaffold() {
     this.container.innerHTML = `
-      <section class="glass-card dataset-panel">
-        <div class="card-header">
-          <div>
-            <p class="eyebrow">SHARED DATASET &amp; PRESETS</p>
-            <h2 class="card-title">劇本預設與自訂珠子編輯器</h2>
+      <details class="glass-card dataset-drawer" data-role="dataset-drawer">
+        <summary class="drawer-summary">
+          <div class="drawer-summary-left">
+            <span class="drawer-title">📝 更換題目或自訂珠子</span>
+            <span class="drawer-sub" data-role="banner-name">目前題目：整數小樣本 {2, 4, 6}</span>
           </div>
-          <label class="lock-toggle" title="開啟時，模組 2 / 3 / 4 切換將共享同一組珠子數據">
-            <input type="checkbox" data-role="lock-dataset-toggle" checked />
-            <span>跨模組鎖定</span>
-          </label>
-        </div>
+          <span class="drawer-arrow">展開 ▾</span>
+        </summary>
 
-        <div class="preset-bar">
-          <label class="field-label" for="shared-preset-select">實戰數值劇本</label>
-          <select id="shared-preset-select" class="select-input" data-role="shared-preset-select">
-            <option value="custom">-- 自訂珠子資料 --</option>
-            ${DATASET_PRESETS.map((p) => `<option value="${p.id}">${p.label}</option>`).join('')}
-          </select>
-          <p class="preset-insight" data-role="preset-insight"></p>
-        </div>
+        <div class="drawer-body">
+          <div class="active-dataset-banner">
+            <label class="lock-toggle" title="開啟時，第 2、3、4 站會共用同一組珠子題目">
+              <input type="checkbox" data-role="lock-dataset-toggle" />
+              <span>跨站同步題目</span>
+            </label>
+            <button type="button" class="ghost-btn is-xs" data-role="btn-reset-default">重置回 {2,4,6}</button>
+          </div>
 
-        <div class="bead-editor-header">
-          <span class="field-label">珠子清單（自動正規化 ΣP = 1）</span>
-          <button type="button" class="ghost-btn" data-role="btn-add-bead">＋ 新增珠子</button>
-        </div>
+          <div class="preset-bar">
+            <select id="shared-preset-select" class="select-input" data-role="shared-preset-select" aria-label="選擇範例題目">
+              <option value="custom">-- 自訂珠子資料 --</option>
+              ${DATASET_PRESETS.map((p) => `<option value="${p.id}">${p.label}</option>`).join('')}
+            </select>
+            <p class="preset-insight" data-role="preset-insight"></p>
+          </div>
 
-        <div class="bead-list" data-role="bead-list"></div>
-      </section>
+          <div class="bead-editor-header">
+            <span class="field-label">各珠位置與份數（自動換算 %）</span>
+            <button type="button" class="ghost-btn" data-role="btn-add-bead">＋ 新增珠子</button>
+          </div>
+
+          <div class="bead-list" data-role="bead-list"></div>
+        </div>
+      </details>
     `;
   }
 
   _bindEvents() {
     const { signal } = this._abortController;
+
+    const drawer = this.container.querySelector('[data-role="dataset-drawer"]');
+    drawer.addEventListener(
+      'toggle',
+      () => {
+        const arrow = drawer.querySelector('.drawer-arrow');
+        if (arrow) arrow.textContent = drawer.open ? '收合 ▴' : '展開 ▾';
+      },
+      { signal }
+    );
 
     this.container.addEventListener(
       'change',
@@ -69,7 +80,6 @@ export class ControlPanel {
         if (event.target.matches('[data-role="shared-preset-select"]')) {
           const preset = DATASET_PRESETS.find((p) => p.id === event.target.value);
           if (!preset) return;
-          this._activePresetId = preset.id;
           this.store.setState({
             beads: preset.beads.map((b) => ({ ...b })),
             pivotOverride: null
@@ -82,6 +92,15 @@ export class ControlPanel {
     this.container.addEventListener(
       'click',
       (event) => {
+        if (event.target.closest('[data-role="btn-reset-default"]')) {
+          const def = DATASET_PRESETS[0];
+          this.store.setState({
+            beads: def.beads.map((b) => ({ ...b })),
+            pivotOverride: null
+          });
+          return;
+        }
+
         if (event.target.closest('[data-role="btn-add-bead"]')) {
           const current = this.store.getState().beads;
           if (current.length >= 8) return;
@@ -89,9 +108,8 @@ export class ControlPanel {
           const nextId = `b${Date.now().toString(36)}`;
           const nextBeads = [
             ...current,
-            { id: nextId, x: Number((maxX + 1).toFixed(2)), p: 0.2 }
+            { id: nextId, x: Number((maxX + 1).toFixed(2)), rawWeight: 20 }
           ];
-          this._activePresetId = 'custom';
           this.store.setState({ beads: nextBeads, pivotOverride: null });
           return;
         }
@@ -101,7 +119,6 @@ export class ControlPanel {
           const id = removeBtn.dataset.removeBead;
           const current = this.store.getState().beads;
           if (current.length <= 1) return;
-          this._activePresetId = 'custom';
           this.store.setState({
             beads: current.filter((b) => b.id !== id),
             pivotOverride: null
@@ -120,7 +137,9 @@ export class ControlPanel {
 
         const current = this.store.getState().beads;
         const targetId = xInput ? xInput.dataset.beadX : wInput.dataset.beadW;
-        const val = Number(event.target.value);
+        const rawStr = event.target.value;
+        if (rawStr === '' || rawStr === '-') return;
+        const val = Number(rawStr);
         if (!Number.isFinite(val)) return;
 
         const nextBeads = current.map((b) => {
@@ -129,17 +148,16 @@ export class ControlPanel {
             const safeX = this.allowNegative ? val : Math.max(0, val);
             return { ...b, x: safeX };
           }
-          return { ...b, p: Math.max(0.01, val) };
+          return { ...b, rawWeight: Math.max(0, val) };
         });
 
-        this._activePresetId = 'custom';
         this.store.setBeads(nextBeads);
       },
       { signal }
     );
   }
 
-  _matchPresetId(beads) {
+  _matchPreset(beads) {
     for (const preset of DATASET_PRESETS) {
       if (preset.beads.length !== beads.length) continue;
       const same = preset.beads.every(
@@ -147,26 +165,31 @@ export class ControlPanel {
           Math.abs(pb.x - beads[idx].x) < 1e-6 &&
           Math.abs(pb.p - beads[idx].p) < 1e-6
       );
-      if (same) return preset.id;
+      if (same) return preset;
     }
-    return 'custom';
+    return null;
   }
 
   update(state) {
     const lockToggle = this.container.querySelector('[data-role="lock-dataset-toggle"]');
     lockToggle.checked = Boolean(state.lockDataset);
 
-    const matchedPreset = this._matchPresetId(state.beads);
-    this._activePresetId = matchedPreset;
+    const presetObj = this._matchPreset(state.beads);
+    const matchedId = presetObj ? presetObj.id : 'custom';
 
     const selectEl = this.container.querySelector('[data-role="shared-preset-select"]');
-    selectEl.value = matchedPreset;
+    selectEl.value = matchedId;
+
+    const bannerName = this.container.querySelector('[data-role="banner-name"]');
+    const shortName = presetObj
+      ? presetObj.label.split('（')[0]
+      : `自訂 {${state.beads.map((b) => b.x).join(', ')}}`;
+    bannerName.textContent = `目前：${shortName}${state.lockDataset ? '（跨站同步中）' : ''}`;
 
     const insightEl = this.container.querySelector('[data-role="preset-insight"]');
-    const presetObj = DATASET_PRESETS.find((p) => p.id === matchedPreset);
     insightEl.textContent = presetObj
       ? presetObj.insight
-      : '自訂數據模式：拖動任一珠子座標或權重，系統即時正規化 ΣP(x)=1 並重算三軌變異數。';
+      : '左邊填位置、右邊填份數（例如 50、25、25），右側直接顯示換算百分比。';
 
     const listEl = this.container.querySelector('[data-role="bead-list"]');
     const focused = document.activeElement;
@@ -176,12 +199,11 @@ export class ControlPanel {
         ? `w:${focused.dataset.beadW}`
         : null;
 
-    // 若使用者正在連續輸入或拖曳滑桿，保留現有 DOM 只更新百分比文字，避免焦點跳脫
     const existingRows = listEl.querySelectorAll('[data-bead-row]');
     if (focusedAttr && existingRows.length === state.beads.length) {
       state.beads.forEach((b) => {
         const pctEl = listEl.querySelector(`[data-bead-pct="${b.id}"]`);
-        if (pctEl) pctEl.textContent = `P=${(b.p * 100).toFixed(1)}%`;
+        if (pctEl) pctEl.textContent = `佔比 ${(b.p * 100).toFixed(1)}%`;
       });
       return;
     }
@@ -190,11 +212,12 @@ export class ControlPanel {
       .map((b, index) => {
         const color = BEAD_PALETTE[index % BEAD_PALETTE.length];
         const canRemove = state.beads.length > 1;
+        const rawW = b.rawWeight !== undefined ? b.rawWeight : Number((b.p * 100).toFixed(1));
         return `
-          <div class="bead-row" data-bead-row="${b.id}">
+          <div class="bead-row is-v2" data-bead-row="${b.id}">
             <span class="bead-swatch" style="background:${color}"></span>
             <label class="bead-field">
-              <span>座標 x</span>
+              <span>位置 x</span>
               <input
                 type="number"
                 step="0.5"
@@ -204,18 +227,18 @@ export class ControlPanel {
                 data-bead-x="${b.id}"
               />
             </label>
-            <label class="bead-field is-weight">
-              <span>權重 <strong data-bead-pct="${b.id}">P=${(b.p * 100).toFixed(1)}%</strong></span>
+            <label class="bead-field">
+              <span>份數／權重</span>
               <input
-                type="range"
-                min="0.02"
-                max="1"
-                step="0.01"
-                value="${Math.max(0.02, b.p).toFixed(2)}"
-                class="range-slider"
+                type="number"
+                min="0"
+                step="any"
+                value="${rawW}"
+                class="num-input"
                 data-bead-w="${b.id}"
               />
             </label>
+            <span class="bead-pct-pill" data-bead-pct="${b.id}">佔比 ${(b.p * 100).toFixed(1)}%</span>
             <button
               type="button"
               class="icon-btn"

@@ -136,6 +136,14 @@ export class Mod3OriginCut extends BaseModule {
       persistent: true
     });
     this.remainLabel.visible = false;
+
+    this.exclusionNote = this.labels.addLabel(this.generalGroup, {
+      text: '排容：扣 2 條負側翼重疊了角落 → 補回 +dᵢ²',
+      position: [0, 1.0, 0],
+      className: 'scene-label is-ruler',
+      persistent: true
+    });
+    this.exclusionNote.visible = false;
   }
 
   _setupBernoulliHelpers() {
@@ -202,9 +210,8 @@ export class Mod3OriginCut extends BaseModule {
   _renderControlsUI() {
     this.controlsHost.innerHTML = `
       <section class="glass-card mod-control-card">
-        <div class="card-header">
+        <div class="card-header is-compact">
           <div>
-            <p class="eyebrow">MODULE 3 · PARALLEL AXIS &amp; CUT</p>
             <h2 class="card-title">原點暴力建模與美工刀切割</h2>
           </div>
           <span class="tag-chip" data-role="mod3-step-badge">步驟 1/4</span>
@@ -234,7 +241,7 @@ export class Mod3OriginCut extends BaseModule {
       </section>
 
       <section class="glass-card narration-card">
-        <p class="eyebrow">STEP NARRATION</p>
+        <p class="eyebrow">💡 本步直覺</p>
         <p class="narration-text" data-role="mod3-narration"></p>
       </section>
     `;
@@ -494,6 +501,7 @@ export class Mod3OriginCut extends BaseModule {
     this.laserKnife.visible = step === 3;
     this.collisionLabel.visible = step === 2;
     this.remainLabel.visible = step === 3;
+    this.exclusionNote.visible = false;
     this._particleBurst.visible = false;
 
     const hasAnyWing = perBead.some((b) => Math.abs(b.wingVolume) >= EPSILON);
@@ -553,6 +561,15 @@ export class Mod3OriginCut extends BaseModule {
 
       // 角落純偏差塊 d_i^2 始終保持翠綠正實心
       item.pureBlock.position.set(slotX + wingShiftX, h * 0.5, wingShiftZ);
+
+      if (step === 1 && !isPosWing && dSide >= EPSILON && !this.exclusionNote.visible) {
+        this.exclusionNote.visible = true;
+        this.labels.updateLabel(this.exclusionNote, {
+          text: `x=${b.x} < μ：扣 2 條負側翼重疊了角落 → 補回 +dᵢ²`,
+          position: [slotX + wingShiftX, h + 0.35, wingShiftZ],
+          visible: true
+        });
+      }
 
       const showWings = step === 1 || step === 2;
       item.wingA.visible = showWings && isPosWing && dSide >= EPSILON && muSide >= EPSILON && h >= EPSILON;
@@ -660,7 +677,7 @@ export class Mod3OriginCut extends BaseModule {
     } else if (step === 1) {
       narration.textContent =
         `依 xᵢ = μ + dᵢ 十字切開：中央金色底座 μ² = ${mu2.toFixed(4)}、兩條側翼 2μdᵢ，與角落翠綠純偏差 dᵢ²。` +
-        `當 2μdᵢ < 0 時，負側翼會上浮為紫羅蘭虛線「幽靈負體積」，而角落 dᵢ² 依排容幾何仍保持翠綠實心正塊！`;
+        `當 2μdᵢ < 0（如 x < μ）時，從 μ² 扣掉兩條負側翼會把重疊的角落多扣一次，所以角落必須加回一塊翠綠正方塊 +dᵢ²！`;
     } else if (step === 2) {
       narration.textContent =
         `依重心平衡鐵律 ΣdᵢP(xᵢ) = 0，正負側翼飛往空中對撞並粒子化蒸發歸零（淨和 ${wingNetSum.toFixed(4)}）！`;

@@ -6,35 +6,42 @@
 import { MATH_TOLERANCE } from './constants.js';
 
 /**
- * 將機率權重正規化，確保 ΣP(x_i) = 1 且各權重為有限非負實數。
- * @param {Array<{id?: string, x: number, p: number}>} rawBeads
- * @returns {Array<{id: string, x: number, p: number}>}
+ * 將機率權重正規化，確保 ΣP(x_i) = 1，同時保留使用者輸入的 rawWeight 避免滑桿／輸入框互拉飄移。
+ * @param {Array<{id?: string, x: number, p?: number, rawWeight?: number}>} rawBeads
+ * @returns {Array<{id: string, x: number, p: number, rawWeight: number}>}
  */
 export function normalizeBeads(rawBeads) {
   if (!Array.isArray(rawBeads) || rawBeads.length === 0) {
-    return [{ id: 'b0', x: 0, p: 1 }];
+    return [{ id: 'b0', x: 0, p: 1, rawWeight: 100 }];
   }
+
+  const hasExplicitRaw = rawBeads.some((b) => b?.rawWeight !== undefined);
+  const rawValues = rawBeads.map((b) => {
+    const val = Number(b?.rawWeight !== undefined ? b.rawWeight : b?.p);
+    return Number.isFinite(val) && val > 0 ? val : 0;
+  });
+  const initialSum = rawValues.reduce((acc, v) => acc + v, 0);
+  const scaleToPercent = !hasExplicitRaw && initialSum > 0 && initialSum <= 1.0001 ? 100 : 1;
 
   const sanitized = rawBeads.map((bead, index) => {
     const x = Number.isFinite(Number(bead?.x)) ? Number(bead.x) : 0;
-    const rawP = Number(bead?.p);
-    const p = Number.isFinite(rawP) && rawP > 0 ? rawP : 0;
+    const rawWeight = Number((rawValues[index] * scaleToPercent).toFixed(4));
     return {
       id: bead?.id ? String(bead.id) : `b${index}`,
       x,
-      p
+      rawWeight
     };
   });
 
-  const sumP = sanitized.reduce((acc, item) => acc + item.p, 0);
-  if (sumP <= 0) {
+  const sumW = sanitized.reduce((acc, item) => acc + item.rawWeight, 0);
+  if (sumW <= 0) {
     const uniform = 1 / sanitized.length;
     return sanitized.map((item) => ({ ...item, p: uniform }));
   }
 
   return sanitized.map((item) => ({
     ...item,
-    p: item.p / sumP
+    p: item.rawWeight / sumW
   }));
 }
 
@@ -103,7 +110,6 @@ export function computeAllMetrics(rawBeads, pivotOverride = null) {
   const diffShortWeb = Math.abs(varShort - varWeb);
   const maxDiff = Math.max(diffDefShort, diffDefWeb, diffShortWeb);
 
-  // varDef 由平方項加總得出，數學上必 >= 0；僅防極微小負浮點誤差傳入 sqrt
   const variance = Math.max(0, varDef);
   const sd = Math.sqrt(variance);
 
@@ -111,7 +117,6 @@ export function computeAllMetrics(rawBeads, pivotOverride = null) {
     ? Number(pivotOverride)
     : mu;
 
-  // 支點破壞實驗：任意支點 a 之淨力矩 τ(a) = μ - a，總轉動慣量 I(a) = σ² + (μ - a)²
   const torque = mu - pivot;
   const inertiaAtPivot = variance + (mu - pivot) ** 2;
 
@@ -128,7 +133,6 @@ export function computeAllMetrics(rawBeads, pivotOverride = null) {
       coreVolume: mu * mu * b.p,
       wingBase,
       wingVolume: wingBase * b.p,
-      // 嚴禁以 d > 0 決定顏色，統一依據 2*mu*d 實際正負號
       isPositiveWing: wingBase >= 0
     };
   });
@@ -158,7 +162,6 @@ export function computeAllMetrics(rawBeads, pivotOverride = null) {
 
 /**
  * 3. 單次二項分佈（白努利試驗）幾何與統計量
- * 嚴格對應：0號珠 π×π×(1-π)，1號珠 (1-π)×(1-π)×π，塌縮為 1 × π(1-π)
  * @param {number} rawPi
  */
 export function computeBernoulliMetrics(rawPi) {
@@ -175,8 +178,8 @@ export function computeBernoulliMetrics(rawPi) {
     variance,
     sd,
     beads: [
-      { id: 'b0', x: 0, p: q },
-      { id: 'b1', x: 1, p: pi }
+      { id: 'b0', x: 0, p: q, rawWeight: Number((q * 100).toFixed(2)) },
+      { id: 'b1', x: 1, p: pi, rawWeight: Number((pi * 100).toFixed(2)) }
     ],
     bead0: {
       x: 0,
@@ -196,7 +199,7 @@ export function computeBernoulliMetrics(rawPi) {
 }
 
 /**
- * 7. 安全遞推組合數 C(n, x)，避免階乘溢位
+ * 7. 安全遞推組合數 C(n, x)
  * @param {number} n
  * @param {number} x
  */

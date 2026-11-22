@@ -67,13 +67,7 @@ export class Mod5BinomialN extends BaseModule {
 
   init() {
     super.init();
-
-    // 啟用上下聯動雙視區排版
-    if (this.stagePane && this.upperHost) {
-      this.stagePane.classList.add('is-split-mod5');
-      this.upperHost.style.display = 'flex';
-    }
-
+    this.webglWrap = this.stagePane?.querySelector('.stage-webgl-wrap') || null;
     this.stage.setCameraHome([0, 3.6, 7.6], [0, 0.35, 0.3]);
 
     // 1. n 塊單次塌縮長方體容器
@@ -132,7 +126,7 @@ export class Mod5BinomialN extends BaseModule {
       <div class="mod5-upper-grid">
         <div class="mod5-comb-pane">
           <div class="mod5-pane-head">
-            <span class="eyebrow">PATH COMBINATORICS</span>
+            <span class="eyebrow">路徑組合（除 x!）</span>
             <button type="button" class="chip-btn is-tear-btn" data-role="btn-tear-labels">
               撕掉順序標籤（合併 x! 重複排列）
             </button>
@@ -143,7 +137,7 @@ export class Mod5BinomialN extends BaseModule {
 
         <div class="mod5-dist-pane">
           <div class="mod5-pane-head">
-            <span class="eyebrow">BINOMIAL DISTRIBUTION &amp; P(X ≥ 1)</span>
+            <span class="eyebrow">二項機率分佈與「至少一個」</span>
             <span class="mono-value" data-role="dist-headline"></span>
           </div>
           <svg class="binom-svg" viewBox="0 0 360 135" preserveAspectRatio="xMidYMid meet" data-role="binom-svg"></svg>
@@ -158,18 +152,31 @@ export class Mod5BinomialN extends BaseModule {
   _renderControlsUI() {
     this.controlsHost.innerHTML = `
       <section class="glass-card mod-control-card">
-        <div class="card-header">
+        <div class="card-header is-compact">
           <div>
-            <p class="eyebrow">MODULE 5 · BINOMIAL &amp; √n SCALING</p>
-            <h2 class="card-title">二項路徑組合與 n 次倍率放大</h2>
+            <h2 class="card-title">二項路徑與 n 次倍率</h2>
           </div>
           <span class="tag-chip" data-role="mod5-comb-chip">C(4,2) = 6</span>
         </div>
 
-        <div class="preset-pills">
+        <div class="lens-tabs" role="tablist" aria-label="模組五焦點切換">
+          <button type="button" class="lens-tab" data-mod5-focus="comb">① 路徑為何除 x!</button>
+          <button type="button" class="lens-tab" data-mod5-focus="scaling">② 體積 ×n vs 尺規 ×√n</button>
+        </div>
+
+        <div class="preset-pills" data-mod5-only="comb">
           <button type="button" class="chip-btn" data-role="btn-freethrow-preset">
-            罰球 70% 連投 4 球（求進 2 球）
+            罰球 70%（n=4, x=2）
           </button>
+          <button type="button" class="chip-btn" data-role="btn-perm3-preset">
+            排列對比（n=5, x=3 → 3!=6）
+          </button>
+        </div>
+
+        <div class="preset-pills" data-mod5-only="scaling">
+          <button type="button" class="chip-btn" data-mod5-square="1">對照 n=1（π=0.5）</button>
+          <button type="button" class="chip-btn" data-mod5-square="4">對照 n=4（×4 vs ×2）</button>
+          <button type="button" class="chip-btn" data-mod5-square="9">對照 n=9（×9 vs ×3）</button>
         </div>
 
         <div class="control-block">
@@ -180,7 +187,7 @@ export class Mod5BinomialN extends BaseModule {
           <input type="range" min="1" max="10" step="1" value="4" class="range-slider" data-role="mod5-n-slider" />
         </div>
 
-        <div class="control-block">
+        <div class="control-block" data-mod5-only="comb">
           <div class="slider-row">
             <span class="field-label">目標成功次數 x（0 ~ n）</span>
             <strong class="mono-value" data-role="mod5-x-val">2</strong>
@@ -196,15 +203,18 @@ export class Mod5BinomialN extends BaseModule {
           <input type="range" min="0" max="1" step="0.01" value="0.30" class="range-slider" data-role="mod5-pi-slider" />
         </div>
 
-        <label class="lock-toggle at-least-one-toggle">
+        <label class="lock-toggle at-least-one-toggle" data-mod5-only="comb">
           <input type="checkbox" data-role="toggle-at-least-one" />
           <span>至少一個捷徑：P(X ≥ 1) = 1 − P(0)</span>
         </label>
       </section>
 
       <section class="glass-card narration-card">
-        <p class="eyebrow">INTUITION NARRATION</p>
+        <p class="eyebrow">💡 白話直覺</p>
         <p class="narration-text" data-role="mod5-narration"></p>
+        <div class="caution-banner" data-mod5-only="scaling">
+          ⚠ 防錯提醒：這裡「變異數 ×n、標準差 ×√n」討論的是<strong>總成功次數 X</strong>（投 9 球總進球數波動比投 1 球大）；若是算<strong>平均命中率 X/n</strong>，除以 n 後標準誤反而縮小為 1/√n！
+        </div>
       </section>
     `;
   }
@@ -228,11 +238,34 @@ export class Mod5BinomialN extends BaseModule {
     this.controlsHost.addEventListener(
       'click',
       (event) => {
+        const focusBtn = event.target.closest('[data-mod5-focus]');
+        if (focusBtn) {
+          this.store.setState({ mod5Focus: focusBtn.dataset.mod5Focus });
+          return;
+        }
         if (event.target.closest('[data-role="btn-freethrow-preset"]')) {
           this.store.setState({
             binomialN: 4,
             binomialX: 2,
             bernoulliPi: 0.7
+          });
+          return;
+        }
+        if (event.target.closest('[data-role="btn-perm3-preset"]')) {
+          this.store.setState({
+            binomialN: 5,
+            binomialX: 3,
+            bernoulliPi: 0.5
+          });
+          return;
+        }
+        const sqBtn = event.target.closest('[data-mod5-square]');
+        if (sqBtn) {
+          const n = Number(sqBtn.dataset.mod5Square);
+          this.store.setState({
+            binomialN: n,
+            binomialX: Math.floor(n / 2),
+            bernoulliPi: 0.5
           });
         }
       },
@@ -298,6 +331,25 @@ export class Mod5BinomialN extends BaseModule {
   }
 
   update(state) {
+    const focus = state.mod5Focus === 'scaling' ? 'scaling' : 'comb';
+    const isComb = focus === 'comb';
+
+    // 單一焦點視區切換：選「路徑為何除 x!」時只留上方圖表區；選「×n vs ×√n」時釋放全高 3D 舞台
+    if (this.stagePane && this.upperHost) {
+      this.stagePane.classList.toggle('is-mod5-comb-only', isComb);
+      this.upperHost.style.display = isComb ? 'flex' : 'none';
+      if (this.webglWrap) {
+        this.webglWrap.style.display = isComb ? 'none' : '';
+      }
+    }
+
+    for (const btn of this.controlsHost.querySelectorAll('[data-mod5-focus]')) {
+      btn.classList.toggle('is-active', btn.dataset.mod5Focus === focus);
+    }
+    for (const el of this.controlsHost.querySelectorAll('[data-mod5-only]')) {
+      el.style.display = el.dataset.mod5Only === focus ? '' : 'none';
+    }
+
     const metrics = computeBinomialMetrics(state.binomialN, state.binomialX, state.bernoulliPi);
     this._syncSlabPool(metrics.n);
     this._update3DStage(metrics);
@@ -376,10 +428,12 @@ export class Mod5BinomialN extends BaseModule {
     const xFact = factorial(x);
     const orderedCount = ways * xFact;
 
+    const compactClass = n >= 8 ? ' is-sm' : '';
+
     if (x === 0) {
       permStack.innerHTML = `
         <div class="perm-row is-merged">
-          ${Array.from({ length: n }, () => `<span class="slot-box is-fail">✗</span>`).join('')}
+          ${Array.from({ length: n }, () => `<span class="slot-box is-fail${compactClass}">✗</span>`).join('')}
           <span class="perm-note">0 個成功格 → 僅 1 條全敗路徑</span>
         </div>
       `;
@@ -389,8 +443,8 @@ export class Mod5BinomialN extends BaseModule {
         <div class="perm-row is-merged">
           ${Array.from({ length: n }, (_, idx) =>
             idx < x
-              ? `<span class="slot-box is-success">✓</span>`
-              : `<span class="slot-box is-fail">✗</span>`
+              ? `<span class="slot-box is-success${compactClass}">✓</span>`
+              : `<span class="slot-box is-fail${compactClass}">✗</span>`
           ).join('')}
           <span class="perm-note">已合併為 1 條無序路徑</span>
         </div>
@@ -406,8 +460,8 @@ export class Mod5BinomialN extends BaseModule {
             <div class="perm-row">
               ${Array.from({ length: n }, (_, idx) =>
                 idx < x
-                  ? `<span class="slot-box is-success">✓<sub>${perm[idx]}</sub></span>`
-                  : `<span class="slot-box is-fail">✗</span>`
+                  ? `<span class="slot-box is-success${compactClass}">✓<sub>${perm[idx]}</sub></span>`
+                  : `<span class="slot-box is-fail${compactClass}">✗</span>`
               ).join('')}
             </div>
           `
@@ -568,8 +622,11 @@ export class Mod5BinomialN extends BaseModule {
 
   dispose() {
     this._abortController.abort();
+    if (this.webglWrap) {
+      this.webglWrap.style.display = '';
+    }
     if (this.stagePane && this.upperHost) {
-      this.stagePane.classList.remove('is-split-mod5');
+      this.stagePane.classList.remove('is-split-mod5', 'is-mod5-comb-only');
       this.upperHost.style.display = 'none';
       this.upperHost.innerHTML = '';
     }

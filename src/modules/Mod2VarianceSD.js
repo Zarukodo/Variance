@@ -40,7 +40,7 @@ export class Mod2VarianceSD extends BaseModule {
 
   init() {
     super.init();
-    this.stage.setCameraHome([5.0, 4.2, 7.6], [0, 0.75, 0]);
+    this.stage.setCameraHome([5.4, 4.6, 9.0], [0, 0.75, 0]);
 
     // 1. 積木容器
     this.blocksGroup = new THREE.Group();
@@ -126,23 +126,22 @@ export class Mod2VarianceSD extends BaseModule {
   _renderControlsUI() {
     this.controlsHost.innerHTML = `
       <section class="glass-card mod-control-card">
-        <div class="card-header">
+        <div class="card-header is-compact">
           <div>
-            <p class="eyebrow">MODULE 2 · VARIANCE &amp; SD RULER</p>
             <h2 class="card-title">多珠偏差方柱與降維尺規</h2>
           </div>
           <span class="tag-chip" data-role="mod2-state-chip">3D 偏差方柱</span>
         </div>
 
-        <div class="action-row">
+        <div class="action-row" data-mod2-section="recast">
           <button type="button" class="primary-btn" data-role="btn-recast-sd">
             定厚重鑄降維動畫（√σ² → μ ± σ）
           </button>
         </div>
 
-        <div class="divider-line"></div>
+        <div class="divider-line" data-mod2-section="pivot-divider"></div>
 
-        <div class="control-block">
+        <div class="control-block" data-mod2-section="pivot">
           <div class="slider-row">
             <span class="field-label">支點破壞實驗：拖離重心支點 a</span>
             <strong class="mono-value accent-mu" data-role="mod2-pivot-val">鎖定重心 μ</strong>
@@ -150,14 +149,20 @@ export class Mod2VarianceSD extends BaseModule {
           <input type="range" min="0" max="10" step="0.1" value="4.2" class="range-slider is-amber" data-role="mod2-pivot-slider" />
           <div class="pivot-footer">
             <span class="mini-stat" data-role="mod2-inertia-readout">I(μ) = 1.9600（最小值）</span>
-            <button type="button" class="ghost-btn" data-role="btn-mod2-reset-pivot">回正重心支點</button>
+            <div class="pivot-btn-group">
+              <button type="button" class="ghost-btn" data-role="btn-mod2-push-origin" title="為第 3 站原點一刀切搭橋">試推到原點 a=0</button>
+              <button type="button" class="ghost-btn" data-role="btn-mod2-reset-pivot">回正重心</button>
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="glass-card narration-card">
-        <p class="eyebrow">INTUITION NARRATION</p>
+      <section class="glass-card narration-card" data-mod2-section="narration">
+        <p class="eyebrow">💡 白話直覺</p>
         <p class="narration-text" data-role="mod2-narration"></p>
+        <div class="caution-banner" data-role="mod2-ruler-caution" style="display:none;">
+          ⚠ 防錯提醒：<strong>μ ± σ 只是衡量「典型波動寬度」的尺規</strong>，不代表所有資料都落在裡面（極端值會超出），不代表一定有負數資料，也不保證佔 68%（68% 僅適用常態分佈）。
+        </div>
       </section>
     `;
   }
@@ -170,6 +175,11 @@ export class Mod2VarianceSD extends BaseModule {
       (event) => {
         if (event.target.closest('[data-role="btn-recast-sd"]')) {
           this._toggleRecastAnimation();
+          return;
+        }
+        if (event.target.closest('[data-role="btn-mod2-push-origin"]')) {
+          if (this._isRecast) this._resetRecastImmediate();
+          this.store.setState({ pivotOverride: 0 });
           return;
         }
         if (event.target.closest('[data-role="btn-mod2-reset-pivot"]')) {
@@ -204,11 +214,12 @@ export class Mod2VarianceSD extends BaseModule {
 
     this._isRecast = nextRecast;
     this._isAnimating = true;
+    this._updateReadout(this.store.getState());
     gsap.killTweensOf(this._animState);
 
     gsap.to(this._animState, {
       stage: nextRecast ? 3 : 0,
-      duration: nextRecast ? 2.4 : 1.0,
+      duration: nextRecast ? 1.5 : 0.85,
       ease: 'power2.inOut',
       onUpdate: () => {
         this._applyGeometry(this.store.getState());
@@ -248,10 +259,11 @@ export class Mod2VarianceSD extends BaseModule {
     }
     this._isRecast = recast;
     this._isAnimating = true;
+    this._updateReadout(this.store.getState());
     gsap.killTweensOf(this._animState);
     gsap.to(this._animState, {
       stage: recast ? 3 : 0,
-      duration: recast ? 2.2 : 0.85,
+      duration: recast ? 1.5 : 0.85,
       ease: 'power2.inOut',
       onUpdate: () => this._applyGeometry(this.store.getState()),
       onComplete: () => {
@@ -260,6 +272,29 @@ export class Mod2VarianceSD extends BaseModule {
         this._updateReadout(this.store.getState());
       }
     });
+  }
+
+  /**
+   * 供教學引導控制右側子區塊顯示範圍
+   * @param {string[] | null} allowedSections
+   */
+  setGuidedScope(allowedSections) {
+    const showAll = !Array.isArray(allowedSections);
+    const modCard = this.controlsHost.querySelector('.mod-control-card');
+    if (modCard) {
+      const hasControlChild =
+        showAll || allowedSections.some((s) => ['recast', 'pivot'].includes(s));
+      modCard.style.display = hasControlChild ? '' : 'none';
+    }
+    for (const el of this.controlsHost.querySelectorAll('[data-mod2-section]')) {
+      const name = el.dataset.mod2Section;
+      if (name === 'pivot-divider') {
+        const showDivider = showAll || (allowedSections.includes('recast') && allowedSections.includes('pivot'));
+        el.style.display = showDivider ? '' : 'none';
+      } else {
+        el.style.display = showAll || allowedSections.includes(name) ? '' : 'none';
+      }
+    }
   }
 
   _computeVisualScale(beads) {
@@ -271,7 +306,7 @@ export class Mod2VarianceSD extends BaseModule {
     }
     const span = maxX - minX;
     const centerX = (minX + maxX) * 0.5;
-    const scaleX = span > 0 ? Math.min(1.0, 5.2 / span) : 1.0;
+    const scaleX = span > 0 ? Math.min(1.0, 4.2 / span) : 1.0;
     const scaleY = 1.6; // 機率高度與模具定厚 1.00 共用比例，確保 σ_world = sd * scaleX
     return { minX, maxX, span, centerX, scaleX, scaleY };
   }
@@ -503,6 +538,11 @@ export class Mod2VarianceSD extends BaseModule {
         : this._isRecast
           ? '重設回 3D 偏差方柱'
           : '定厚重鑄降維動畫（√σ² → μ ± σ）';
+
+    const cautionEl = this.controlsHost.querySelector('[data-role="mod2-ruler-caution"]');
+    if (cautionEl) {
+      cautionEl.style.display = this._isRecast && sd >= EPSILON ? 'block' : 'none';
+    }
 
     const narrationEl = this.controlsHost.querySelector('[data-role="mod2-narration"]');
     if (sd < EPSILON) {

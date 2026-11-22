@@ -41,6 +41,14 @@ export class Mod4GravityWeb extends BaseModule {
     this.linksGroup = new THREE.Group();
     this.root.add(this.linksGroup, this.beadsGroup);
 
+    this.midpointNote = this.labels.addLabel(this.root, {
+      text: '中點融合 = 配對去重 (× ½)，非重心 μ',
+      position: [0, 1.5, 0],
+      className: 'scene-label is-caliper',
+      persistent: true
+    });
+    this.midpointNote.visible = false;
+
     // 數線軌道發光底座
     const railGeo = new THREE.BoxGeometry(8.5, 0.03, 0.12);
     const railMat = new THREE.MeshStandardMaterial({
@@ -63,9 +71,8 @@ export class Mod4GravityWeb extends BaseModule {
   _renderControlsUI() {
     this.controlsHost.innerHTML = `
       <section class="glass-card mod-control-card">
-        <div class="card-header">
+        <div class="card-header is-compact">
           <div>
-            <p class="eyebrow">MODULE 4 · OPPOSITION GRAVITY WEB</p>
             <h2 class="card-title">對立引力網（隱藏重心 μ）</h2>
           </div>
           <span class="tag-chip" data-role="mod4-tension-chip">張力活躍</span>
@@ -75,7 +82,7 @@ export class Mod4GravityWeb extends BaseModule {
       </section>
 
       <section class="glass-card narration-card">
-        <p class="eyebrow">INTUITION NARRATION</p>
+        <p class="eyebrow">💡 白話直覺</p>
         <p class="narration-text" data-role="mod4-narration"></p>
       </section>
     `;
@@ -125,9 +132,10 @@ export class Mod4GravityWeb extends BaseModule {
         const intersectPt = new THREE.Vector3();
         if (!this._raycaster.ray.intersectPlane(this._floorPlane, intersectPt)) return;
 
-        const clampedWorldX = THREE.MathUtils.clamp(intersectPt.x, -4.2, 4.2);
+        const clampedWorldX = THREE.MathUtils.clamp(intersectPt.x, -4.0, 4.0);
         const rawMathX = this._dragState.centerX + clampedWorldX / this._dragState.scaleX;
-        const snappedX = Math.round(rawMathX * 10) / 10;
+        const snapStep = this._dragState.scaleX < 0.3 ? 1 : 0.5;
+        const snappedX = Math.round(rawMathX / snapStep) * snapStep;
 
         const currentBeads = this.store.getState().beads;
         const nextBeads = currentBeads.map((b) =>
@@ -282,7 +290,7 @@ export class Mod4GravityWeb extends BaseModule {
 
   update(state) {
     const metrics = computeAllMetrics(state.beads, null);
-    const { beads, variance } = metrics;
+    const { beads, variance, mu } = metrics;
 
     // 未拖曳時才更新座標縮放，拖曳過程中保留鎖定比例避免數線漂移
     if (!this._dragState) {
@@ -308,7 +316,7 @@ export class Mod4GravityWeb extends BaseModule {
       mesh.userData.token = `bead:${b.id}`;
 
       this.labels.updateLabel(lbl, {
-        text: `x=${b.x} (P=${b.p.toFixed(2)})`,
+        text: `↔ x=${b.x} (${(b.p * 100).toFixed(0)}%)`,
         position: [0, -1.65, 1.3],
         visible: true
       });
@@ -371,9 +379,22 @@ export class Mod4GravityWeb extends BaseModule {
       link.tubeMesh.material.emissiveIntensity = 0.25 + 0.65 * intensityRatio;
     }
 
-    this._updateReadout(beads, pairs, variance);
+    this._updateReadout(beads, pairs, variance, mu);
     this._updateFormulaLens(state, beads, pairs, variance);
     this.onHover(state.hoveredToken);
+
+    const activeLinks = this._pairLinks.filter((l) => l.group.visible && l.curve);
+    if (activeLinks.length > 0) {
+      const topCurve = activeLinks[activeLinks.length - 1].curve;
+      const apex = topCurve.getPoint(0.5);
+      this.midpointNote.visible = true;
+      this.labels.updateLabel(this.midpointNote, {
+        text: `脈衝中點融合 = 去重 (× ½)｜非重心 μ=${mu.toFixed(1)}`,
+        position: [apex.x, apex.y + 0.28, apex.z]
+      });
+    } else {
+      this.midpointNote.visible = false;
+    }
   }
 
   _tickPulses() {
@@ -405,7 +426,7 @@ export class Mod4GravityWeb extends BaseModule {
     }
   }
 
-  _updateReadout(beads, pairs, variance) {
+  _updateReadout(beads, pairs, variance, mu) {
     const chip = this.controlsHost.querySelector('[data-role="mod4-tension-chip"]');
     const isZero = variance < EPSILON;
     chip.textContent = isZero ? '無對立面（張力歸零）' : `活躍引力線 ${pairs.filter((p) => p.tension >= 1e-8).length} 條`;
@@ -418,14 +439,16 @@ export class Mod4GravityWeb extends BaseModule {
         .map((p) => {
           const b1 = beads[p.i];
           const b2 = beads[p.j];
+          const geomMid = ((b1.x + b2.x) * 0.5).toFixed(1);
           return `
             <div class="pair-chip" data-token="pair:${p.i}:${p.j}">
-              <span>(${b1.x} ↔ ${b2.x})</span>
+              <span>(${b1.x} ↔ ${b2.x}，連線中點 ${geomMid})</span>
               <code>P₁P₂Δx² = ${p.tension.toFixed(4)}</code>
             </div>
           `;
         })
-        .join('');
+        .join('') +
+        `<div class="caution-banner">⚠ 防錯提醒：脈衝撞在連線「幾何中點」只代表配對不重複計算（乘以 ½），<strong>並不是加權重心 μ</strong>！（目前實際重心為 μ = ${mu.toFixed(2)}，權重不同時會偏向較重那端）</div>`;
     }
 
     const narrationEl = this.controlsHost.querySelector('[data-role="mod4-narration"]');
@@ -435,8 +458,8 @@ export class Mod4GravityWeb extends BaseModule {
         `試著在 3D 地板上左右拖曳任一顆珠子，立刻就能重新繃出張力光束！`;
     } else {
       narrationEl.textContent =
-        `本視角完全隱藏平均數 μ：每個對立組合 (i, j) 皆由兩端各射出一道半透明脈衝並於中點融合，直觀詮釋公式前方的係數 ½。` +
-        `總張力加總即為變異數 σ² = ${variance.toFixed(4)}（可直接於 3D 舞台左右拖曳發光球體！）。`;
+        `本視角完全隱藏平均數 μ：每個對立組合 (i, j) 皆由兩端各射出一道脈衝於連線中點融合，詮釋公式前方的「乘 ½（只算一次）」。` +
+        `總張力加總即為變異數 σ² = ${variance.toFixed(4)}（可直接拖曳 3D 球體移動座標）。`;
     }
   }
 
@@ -486,7 +509,7 @@ export class Mod4GravityWeb extends BaseModule {
       }
     } else {
       parts = [
-        { type: 'op', text: '雙向脈衝融合 (×½) → ' },
+        { type: 'op', text: '雙向脈衝融合（乘 ½）→ ' },
         ...pairs.slice(0, 4).flatMap((p, idx) => [
           ...(idx > 0 ? [{ type: 'op', text: ' + ' }] : []),
           {

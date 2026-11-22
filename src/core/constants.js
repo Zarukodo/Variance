@@ -1,10 +1,9 @@
 /**
- * 全站統一色彩語意、渲染層級與數值容差常數
- * 嚴格對齊 ARCHITECTURE.md 與 formula_logic.txt 規範
+ * 全站統一色彩語意、渲染層級與數值容差常數（V2.0 新手友善命名）
  */
 
 export const COLORS = Object.freeze({
-  bg: '#0f172a',          // 背景空間／深炭藍
+  bg: '#0f172a',
   bgHex: 0x0f172a,
   surface: '#1e293b',
   mu: '#f59e0b',          // 期望值支點 μ／中央核心柱 μ²（琥珀金）
@@ -32,16 +31,17 @@ export const RENDER_ORDER = Object.freeze({
   LASER_CUT: 6
 });
 
-/** 幾何工廠零尺寸防呆門檻：任一維度小於此值即隱藏（visible = false），不傳入 BoxGeometry */
+/** 幾何工廠零尺寸防呆門檻 */
 export const EPSILON = 1e-4;
 
 /** 三軌變異數驗算誤差容許門檻 */
 export const MATH_TOLERANCE = 1e-9;
 
 export const MODULE_LIST = Object.freeze([
-  { id: 'mod1', shortLabel: '模組 1', title: '雙珠塌縮' },
-  { id: 'mod2', shortLabel: '模組 2', title: '多珠與降維' },
-  { id: 'mod3', shortLabel: '模組 3', title: '原點削底座' },
-  { id: 'mod4', shortLabel: '模組 4', title: '對立引力網' },
-  { id: 'mod5', shortLabel: '模組 5', title: '組合與 n 次放大' }
+  { id: 'mod1', shortLabel: '1', title: '平衡與雙珠' },
+  { id: 'mod2', shortLabel: '2', title: '風險與尺規' },
+  { id: 'mod3', shortLabel: '3', title: '原點一刀切' },
+  { id: 'mod4', shortLabel: '4', title: '對立引力網' },
+  { id: 'mod5', shortLabel: '5', title: '組合與 √n' },
+  { id: 'mod6', shortLabel: '6', title: '盲測挑戰' }
 ]);

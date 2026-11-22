@@ -56,11 +56,11 @@
   padding-bottom: 2px;
 }
 
-/* 桌面雙欄：左側 65% 3D 舞台 / 右側 35% 控制與公式面板 */
+/* 桌面雙欄：左側 62% 3D 舞台 / 右側 38% 控制與公式面板 */
 .workspace-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 65% 35%;
+  grid-template-columns: 62% 38%;
   min-height: 0;
 }
 
@@ -92,6 +92,12 @@
   background: rgba(15, 23, 42, 0.9);
   backdrop-filter: blur(10px);
   z-index: 12;
+}
+
+.stage-pane.is-mod5-comb-only .mod5-upper-stage {
+  flex: 1;
+  max-height: none;
+  align-items: center;
 }
 
 .guided-tour-host {

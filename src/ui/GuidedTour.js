@@ -1,27 +1,23 @@
 /**
- * 新手互動教學引導教練（GuidedTour.js）
- * - 以 12 步故事流串聯 5 大模組，主動同步 3D 場景、鏡頭、動畫與對比實驗
- * - 支援章節快跳、上一步／下一步、一鍵示範對比、與自由探索模式切換
+ * 新手互動教學引導教練 V3.0（GuidedTour.js）
+ * - 單排極簡 7 章節膠囊（零換行、零捲軸）
+ * - 支援每步驟專屬面板焦點減法（panelPolicy）與唯一聚光燈高亮（無雙胞胎按鈕）
  */
 
 import { TOUR_CHAPTERS, TOUR_STEPS } from '../core/tourCurriculum.js';
 
 export class GuidedTour {
-  /**
-   * @param {{
-   *   host: HTMLElement,
-   *   toggleButton: HTMLElement,
-   *   store: import('../core/store.js').store,
-   *   getActiveModule: () => any
-   * }} opts
-   */
-  constructor({ host, toggleButton, store, getActiveModule }) {
+  constructor({ host, toggleButton, store, getActiveModule, onApplyPanelPolicy, onExitToSandbox }) {
     this.host = host;
     this.toggleButton = toggleButton;
     this.store = store;
     this.getActiveModule = getActiveModule;
+    this.onApplyPanelPolicy = onApplyPanelPolicy;
+    this.onExitToSandbox = onExitToSandbox;
     this._isOpen = true;
     this._stepIndex = 0;
+    this._quizAnswered = null;
+    this._spotlightEl = null;
     this._abortController = new AbortController();
 
     this._renderScaffold();
@@ -38,14 +34,14 @@ export class GuidedTour {
                 `<button type="button" class="tour-ch-pill" data-tour-start="${ch.startStep}">${ch.label}</button>`
             ).join('')}
           </div>
-          <button type="button" class="tour-close-btn" data-role="tour-close" title="關閉引導並自由操作">
-            ✕ 自由探索
+          <button type="button" class="tour-close-btn" data-role="tour-close" title="關閉引導並切換為自由實驗模式">
+            ✕ 自由實驗
           </button>
         </div>
 
         <div class="tour-body">
           <div class="tour-meta-row">
-            <span class="tour-step-counter" data-role="tour-counter">第 1 / 12 步</span>
+            <span class="tour-step-counter" data-role="tour-counter">第 1 / 15 步</span>
             <div class="tour-progress-track">
               <div class="tour-progress-fill" data-role="tour-progress"></div>
             </div>
@@ -54,6 +50,8 @@ export class GuidedTour {
           <h3 class="tour-title" data-role="tour-title"></h3>
           <p class="tour-mental" data-role="tour-mental"></p>
           <p class="tour-text" data-role="tour-text"></p>
+
+          <div class="tour-quiz-box" data-role="tour-quiz-box" style="display:none;"></div>
         </div>
 
         <div class="tour-footer">
@@ -94,6 +92,12 @@ export class GuidedTour {
           return;
         }
 
+        const quizBtn = event.target.closest('[data-tour-quiz-opt]');
+        if (quizBtn) {
+          this._handleQuizPick(quizBtn.dataset.tourQuizOpt);
+          return;
+        }
+
         if (event.target.closest('[data-role="tour-prev"]')) {
           this.goToStep(Math.max(0, this._stepIndex - 1));
           return;
@@ -120,15 +124,55 @@ export class GuidedTour {
     );
   }
 
+  _handleQuizPick(optionId) {
+    const step = TOUR_STEPS[this._stepIndex];
+    if (!step?.quiz) return;
+    this._quizAnswered = optionId;
+    if (typeof step.quiz.onPick === 'function') {
+      step.quiz.onPick(optionId, {
+        store: this.store,
+        applyPanelPolicy: (policy) => {
+          if (this.onApplyPanelPolicy) this.onApplyPanelPolicy(policy);
+        }
+      });
+    }
+    this._renderQuiz(step);
+  }
+
+  _clearSpotlight() {
+    if (this._spotlightEl) {
+      this._spotlightEl.classList.remove('tour-spotlight');
+      this._spotlightEl = null;
+    }
+  }
+
+  _applySpotlight(selector) {
+    this._clearSpotlight();
+    if (!selector || !this._isOpen) return;
+    setTimeout(() => {
+      if (!this._isOpen) return;
+      const el = document.querySelector(selector);
+      if (el) {
+        el.classList.add('tour-spotlight');
+        this._spotlightEl = el;
+      }
+    }, 80);
+  }
+
   setOpen(open) {
     this._isOpen = Boolean(open);
     this.host.style.display = this._isOpen ? 'block' : 'none';
+    this.store.setState({ uiMode: this._isOpen ? 'guided' : 'sandbox' });
     if (this.toggleButton) {
       this.toggleButton.classList.toggle('is-active', this._isOpen);
-      this.toggleButton.textContent = this._isOpen ? '🎓 引導中（點此收合）' : '🎓 新手教學引導';
+      this.toggleButton.textContent = this._isOpen ? '🎓 教學引導中' : '🎓 開啟教學引導';
     }
     if (this._isOpen) {
       this.goToStep(this._stepIndex);
+    } else {
+      this._clearSpotlight();
+      if (this.onApplyPanelPolicy) this.onApplyPanelPolicy(null);
+      if (this.onExitToSandbox) this.onExitToSandbox();
     }
   }
 
@@ -136,21 +180,66 @@ export class GuidedTour {
     this.setOpen(true);
   }
 
+  getCurrentPolicy() {
+    if (!this._isOpen) return null;
+    return TOUR_STEPS[this._stepIndex]?.panelPolicy || null;
+  }
+
   goToStep(index) {
     const clamped = Math.min(TOUR_STEPS.length - 1, Math.max(0, index));
     this._stepIndex = clamped;
+    this._quizAnswered = null;
     const step = TOUR_STEPS[clamped];
 
     if (typeof step.enter === 'function') {
       step.enter({ store: this.store, getActiveModule: this.getActiveModule });
     }
+    if (this.onApplyPanelPolicy) {
+      this.onApplyPanelPolicy(step.panelPolicy || null);
+    }
     this._renderStepUI(step, this.store.getState());
+    this._applySpotlight(step.spotlightSelector || null);
   }
 
   syncState(state) {
     if (!this._isOpen) return;
     const step = TOUR_STEPS[this._stepIndex];
     this._updateActionButton(step, state);
+  }
+
+  _renderQuiz(step) {
+    const box = this.host.querySelector('[data-role="tour-quiz-box"]');
+    if (!step.quiz) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      return;
+    }
+
+    box.style.display = 'block';
+    const picked = step.quiz.options.find((o) => o.id === this._quizAnswered);
+    const feedback = picked
+      ? `<p class="tour-quiz-feedback ${picked.correct ? 'is-ok' : 'is-hint'}">${
+          picked.correct ? step.quiz.feedbackCorrect : step.quiz.feedbackWrong
+        }</p>`
+      : '';
+
+    box.innerHTML = `
+      <div class="tour-quiz-q">${step.quiz.question}</div>
+      <div class="tour-quiz-opts">
+        ${step.quiz.options
+          .map(
+            (opt) => `
+              <button
+                type="button"
+                class="chip-btn ${this._quizAnswered === opt.id ? 'is-active' : ''}"
+                data-tour-quiz-opt="${opt.id}"
+              >${opt.label}</button>
+            `
+          )
+          .join('')}
+      </div>
+      ${feedback}
+    `;
   }
 
   _renderStepUI(step, state) {
@@ -172,6 +261,7 @@ export class GuidedTour {
     prevBtn.disabled = this._stepIndex === 0;
     nextBtn.textContent = this._stepIndex === total - 1 ? '完成並自由探索 ✓' : '下一步 ▶';
 
+    this._renderQuiz(step);
     this._updateActionButton(step, state);
   }
 
@@ -183,16 +273,13 @@ export class GuidedTour {
     }
 
     demoBtn.style.display = 'inline-flex';
-    const active = step.action.isActive
-      ? step.action.isActive(
-          step.id === 'step-11-comb-tear' ? { getActiveModule: this.getActiveModule } : state
-        )
-      : false;
+    const active = step.action.isActive ? step.action.isActive(state) : false;
     demoBtn.textContent = active && step.action.altLabel ? step.action.altLabel : step.action.label;
     demoBtn.classList.toggle('is-active', active);
   }
 
   dispose() {
+    this._clearSpotlight();
     this._abortController.abort();
     this.host.innerHTML = '';
   }

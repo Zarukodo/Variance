@@ -33,12 +33,11 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="brand">
-        <h1 class="brand-title">統計學空間直覺實驗室</h1>
-        <span class="brand-sub">Dark Atelier · 3D Lab</span>
+        <h1 class="brand-title">統計空間直覺實驗室</h1>
       </div>
       <div class="topbar-right">
         <button id="btn-tour-toggle" type="button" class="tour-toggle-btn is-active">
-          🎓 引導中（點此收合）
+          🎓 教學引導中
         </button>
         <nav id="module-nav" class="module-nav" aria-label="教學模組切換"></nav>
       </div>
@@ -52,15 +51,15 @@
           <div id="stage-canvas-host" class="stage-canvas-host"></div>
 
           <div class="stage-hud-top">
-            <div id="stage-phase-badge" class="hud-pill">Phase 0 引擎啟動中...</div>
+            <div id="stage-phase-badge" class="hud-pill">載入舞台中...</div>
             <div class="stage-hud-actions">
-              <button id="btn-camera-mode" type="button" class="hud-btn">2D 俯視（正交）</button>
-              <button id="btn-reset-camera" type="button" class="hud-btn">重置視角</button>
+              <button id="btn-camera-mode" type="button" class="hud-btn">從正上方平看 (2D 面積)</button>
+              <button id="btn-reset-camera" type="button" class="hud-btn">↺ 復原畫面角度</button>
             </div>
           </div>
 
-          <div class="stage-hud-bottom">
-            <div class="hud-pill">左鍵拖曳旋轉 ｜ 右鍵平移 ｜ 滾輪縮放</div>
+          <div class="stage-hud-bottom" id="stage-hud-bottom">
+            <div class="hud-pill" id="stage-bottom-hint">按住左鍵轉動視角 ｜ 滾輪放大縮小 ｜ 點右上角「復原畫面角度」隨時歸位</div>
           </div>
         </div>
 
@@ -68,9 +67,10 @@
       </section>
 
       <aside class="panel-pane" aria-label="公式與控制面板">
+        <div id="guided-side-host"></div>
+        <div id="module-controls-host"></div>
         <div id="formula-lens-host"></div>
         <div id="shared-panel-host"></div>
-        <div id="module-controls-host"></div>
         <div id="dashboard-host"></div>
       </aside>
     </main>
