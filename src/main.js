@@ -1,5 +1,5 @@
 /**
- * 應用啟動器：初始化 Stage3D、Store、FormulaLens、ControlPanel、Dashboard 與模組切換路由
+ * 應用啟動器：初始化 Stage3D、Store、FormulaLens、ControlPanel、Dashboard、GuidedTour 與模組切換路由
  */
 
 import { MODULE_LIST } from './core/constants.js';
@@ -8,6 +8,7 @@ import { Stage3D } from './engine/Stage3D.js';
 import { FormulaLens } from './ui/FormulaLens.js';
 import { ControlPanel } from './ui/ControlPanel.js';
 import { Dashboard } from './ui/Dashboard.js';
+import { GuidedTour } from './ui/GuidedTour.js';
 import { Mod1Bernoulli } from './modules/Mod1Bernoulli.js';
 import { Mod2VarianceSD } from './modules/Mod2VarianceSD.js';
 import { Mod3OriginCut } from './modules/Mod3OriginCut.js';
@@ -35,6 +36,8 @@ function bootstrap() {
   const stagePane = document.getElementById('stage-pane');
   const upperHost = document.getElementById('mod5-upper-stage');
   const stageContainer = document.getElementById('stage-canvas-host');
+  const tourHost = document.getElementById('guided-tour-host');
+  const btnTourToggle = document.getElementById('btn-tour-toggle');
   const formulaLensHost = document.getElementById('formula-lens-host');
   const sharedPanelHost = document.getElementById('shared-panel-host');
   const controlsHost = document.getElementById('module-controls-host');
@@ -144,6 +147,13 @@ function bootstrap() {
     }
   }
 
+  const guidedTour = new GuidedTour({
+    host: tourHost,
+    toggleButton: btnTourToggle,
+    store,
+    getActiveModule: () => activeInstance
+  });
+
   function syncUI(state, prevState = null) {
     for (const btn of navContainer.querySelectorAll('.nav-tab')) {
       btn.classList.toggle('is-active', btn.dataset.moduleId === state.activeModule);
@@ -197,10 +207,12 @@ function bootstrap() {
     }
 
     dashboard.update(state);
+    guidedTour.syncState(state);
   }
 
   store.subscribe(syncUI);
   syncUI(store.getState());
+  guidedTour.start();
 }
 
 document.addEventListener('DOMContentLoaded', bootstrap);

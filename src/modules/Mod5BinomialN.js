@@ -292,6 +292,11 @@ export class Mod5BinomialN extends BaseModule {
     }
   }
 
+  setLabelsTorn(torn) {
+    this._labelsTorn = Boolean(torn);
+    this.update(this.store.getState());
+  }
+
   update(state) {
     const metrics = computeBinomialMetrics(state.binomialN, state.binomialX, state.bernoulliPi);
     this._syncSlabPool(metrics.n);

@@ -36,7 +36,12 @@
         <h1 class="brand-title">統計學空間直覺實驗室</h1>
         <span class="brand-sub">Dark Atelier · 3D Lab</span>
       </div>
-      <nav id="module-nav" class="module-nav" aria-label="教學模組切換"></nav>
+      <div class="topbar-right">
+        <button id="btn-tour-toggle" type="button" class="tour-toggle-btn is-active">
+          🎓 引導中（點此收合）
+        </button>
+        <nav id="module-nav" class="module-nav" aria-label="教學模組切換"></nav>
+      </div>
     </header>
 
     <main class="workspace-grid">
@@ -58,6 +63,8 @@
             <div class="hud-pill">左鍵拖曳旋轉 ｜ 右鍵平移 ｜ 滾輪縮放</div>
           </div>
         </div>
+
+        <div id="guided-tour-host" class="guided-tour-host"></div>
       </section>
 
       <aside class="panel-pane" aria-label="公式與控制面板">

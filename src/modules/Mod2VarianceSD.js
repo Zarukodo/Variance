@@ -228,6 +228,40 @@ export class Mod2VarianceSD extends BaseModule {
     this._animState.stage = 0;
   }
 
+  /**
+   * 供教學引導流程控制定厚重鑄降維狀態
+   * @param {boolean} recast
+   * @param {boolean} [immediate=false]
+   */
+  setRecast(recast, immediate = false) {
+    if (!recast && immediate) {
+      this._resetRecastImmediate();
+      this._applyGeometry(this.store.getState());
+      this._updateReadout(this.store.getState());
+      return;
+    }
+    if (this._isRecast === recast && !this._isAnimating) return;
+    const metrics = computeAllMetrics(this.store.getState().beads, null);
+    if (recast && metrics.sd < EPSILON) return;
+    if (recast && this.store.getState().pivotOverride !== null) {
+      this.store.resetPivot();
+    }
+    this._isRecast = recast;
+    this._isAnimating = true;
+    gsap.killTweensOf(this._animState);
+    gsap.to(this._animState, {
+      stage: recast ? 3 : 0,
+      duration: recast ? 2.2 : 0.85,
+      ease: 'power2.inOut',
+      onUpdate: () => this._applyGeometry(this.store.getState()),
+      onComplete: () => {
+        this._isAnimating = false;
+        this._applyGeometry(this.store.getState());
+        this._updateReadout(this.store.getState());
+      }
+    });
+  }
+
   _computeVisualScale(beads) {
     let minX = Infinity;
     let maxX = -Infinity;

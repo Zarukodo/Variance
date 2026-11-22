@@ -228,6 +228,38 @@ export class Mod1Bernoulli extends BaseModule {
     this._animState.progress = collapsed ? 1 : 0;
   }
 
+  /**
+   * 供教學引導流程直接設定塌縮狀態（支援補間動畫）
+   * @param {boolean} collapsed
+   * @param {boolean} [immediate=false]
+   */
+  setCollapsed(collapsed, immediate = false) {
+    if (immediate) {
+      this._setCollapsedImmediate(collapsed);
+      this._applyGeometry(this.store.getState());
+      this._updateControlsReadout(this.store.getState());
+      return;
+    }
+    if (this.isCollapsed === collapsed && !this._isAnimating) return;
+    if (collapsed && this.store.getState().pivotOverride !== null) {
+      this.store.resetPivot();
+    }
+    this.isCollapsed = collapsed;
+    this._isAnimating = true;
+    gsap.killTweensOf(this._animState);
+    gsap.to(this._animState, {
+      progress: collapsed ? 1 : 0,
+      duration: 1.0,
+      ease: 'power2.inOut',
+      onUpdate: () => this._applyGeometry(this.store.getState()),
+      onComplete: () => {
+        this._isAnimating = false;
+        this._applyGeometry(this.store.getState());
+        this._updateControlsReadout(this.store.getState());
+      }
+    });
+  }
+
   update(state) {
     this._applyGeometry(state);
     this._updateControlsReadout(state);

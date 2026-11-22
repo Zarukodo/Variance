@@ -733,6 +733,188 @@
   }
 }
 
+/* 新手教學引導列（GuidedTour） */
+.tour-toggle-btn {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(30, 41, 59, 0.72);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.tour-toggle-btn:hover {
+  border-color: var(--border-glow);
+}
+
+.tour-toggle-btn.is-active {
+  border-color: rgba(245, 158, 11, 0.75);
+  background: rgba(245, 158, 11, 0.16);
+  color: #fde68a;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.22);
+}
+
+.tour-dock {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tour-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tour-chapters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 2px;
+}
+
+.tour-ch-pill {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(30, 41, 59, 0.6);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.tour-ch-pill:hover {
+  color: var(--text-primary);
+  border-color: var(--border-glow);
+}
+
+.tour-ch-pill.is-active {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: var(--border-glow);
+  color: #e0f2fe;
+  font-weight: 600;
+}
+
+.tour-close-btn {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tour-close-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-glow);
+}
+
+.tour-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tour-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tour-step-counter {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--color-mu);
+  white-space: nowrap;
+}
+
+.tour-progress-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+}
+
+.tour-progress-fill {
+  height: 100%;
+  width: 8%;
+  background: linear-gradient(90deg, var(--color-mu), var(--color-accent));
+  transition: width 0.25s ease;
+}
+
+.tour-title {
+  margin: 2px 0 0;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tour-mental {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #fde68a;
+  font-weight: 500;
+}
+
+.tour-text {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.tour-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tour-footer-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.tour-demo-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(245, 158, 11, 0.65);
+  background: rgba(245, 158, 11, 0.16);
+  color: #fef3c7;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.tour-demo-btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.tour-demo-btn.is-active {
+  border-color: rgba(6, 182, 212, 0.75);
+  background: rgba(6, 182, 212, 0.2);
+  color: #cffafe;
+}
+
 .ghost-btn {
   padding: 5px 10px;
   border-radius: var(--radius-sm);
