@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>統計學空間直覺模型互動實驗室</title>
+
+  <!-- KaTeX 樣式（含穩定版本鎖定） -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+    crossorigin="anonymous"
+  />
+
+  <!-- 全站相對路徑 CSS -->
+  <link rel="stylesheet" href="./styles/theme.css" />
+  <link rel="stylesheet" href="./styles/layout.css" />
+  <link rel="stylesheet" href="./styles/components.css" />
+
+  <!-- Zero-Build 原生 ES Modules Import Maps -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/",
+        "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm",
+        "katex": "https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.mjs"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <h1 class="brand-title">統計學空間直覺實驗室</h1>
+        <span class="brand-sub">Dark Atelier · 3D Lab</span>
+      </div>
+      <nav id="module-nav" class="module-nav" aria-label="教學模組切換"></nav>
+    </header>
+
+    <main class="workspace-grid">
+      <section class="stage-pane" aria-label="3D 空間舞台">
+        <div id="stage-canvas-host" class="stage-canvas-host"></div>
+
+        <div class="stage-hud-top">
+          <div id="stage-phase-badge" class="hud-pill">Phase 0 引擎啟動中...</div>
+          <div class="stage-hud-actions">
+            <button id="btn-camera-mode" type="button" class="hud-btn">2D 俯視（正交）</button>
+            <button id="btn-reset-camera" type="button" class="hud-btn">重置視角</button>
+          </div>
+        </div>
+
+        <div class="stage-hud-bottom">
+          <div class="hud-pill">左鍵拖曳旋轉 ｜ 右鍵平移 ｜ 滾輪縮放</div>
+        </div>
+      </section>
+
+      <aside class="panel-pane" aria-label="公式與控制面板">
+        <div id="formula-lens-host"></div>
+        <div id="shared-panel-host"></div>
+        <div id="module-controls-host"></div>
+        <div id="dashboard-host"></div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

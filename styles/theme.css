@@ -1,0 +1,49 @@
+:root {
+  /* Dark Atelier 深色藍圖主題 */
+  --bg-canvas: #0f172a;
+  --bg-elevated: rgba(15, 23, 42, 0.86);
+  --bg-card: rgba(30, 41, 59, 0.62);
+  --bg-card-hover: rgba(30, 41, 59, 0.82);
+
+  --border-subtle: rgba(148, 163, 184, 0.18);
+  --border-glow: rgba(56, 189, 248, 0.42);
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* 全站統一色彩語意 */
+  --color-mu: #f59e0b;        /* 期望值支點 μ / 中央核心柱 */
+  --color-bead1: #06b6d4;     /* 1 號珠（成功 π） */
+  --color-bead0: #f43f5e;     /* 0 號珠（失敗 1-π） */
+  --color-positive: #10b981;  /* 正側翼 / 純變異數 σ² */
+  --color-negative: #a855f7;  /* 負側翼 / 標準差尺規 σ */
+  --color-accent: #38bdf8;
+
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 7px;
+
+  --font-sans: 'Inter', 'Noto Sans TC', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --shadow-card: 0 12px 32px rgba(2, 6, 23, 0.45);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
