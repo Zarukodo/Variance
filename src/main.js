@@ -11,6 +11,8 @@ import { Dashboard } from './ui/Dashboard.js';
 import { Mod1Bernoulli } from './modules/Mod1Bernoulli.js';
 import { Mod2VarianceSD } from './modules/Mod2VarianceSD.js';
 import { Mod3OriginCut } from './modules/Mod3OriginCut.js';
+import { Mod4GravityWeb } from './modules/Mod4GravityWeb.js';
+import { Mod5BinomialN } from './modules/Mod5BinomialN.js';
 
 function createModuleInstance(moduleId, context) {
   switch (moduleId) {
@@ -20,12 +22,18 @@ function createModuleInstance(moduleId, context) {
       return new Mod2VarianceSD(context);
     case 'mod3':
       return new Mod3OriginCut(context);
+    case 'mod4':
+      return new Mod4GravityWeb(context);
+    case 'mod5':
+      return new Mod5BinomialN(context);
     default:
       return null;
   }
 }
 
 function bootstrap() {
+  const stagePane = document.getElementById('stage-pane');
+  const upperHost = document.getElementById('mod5-upper-stage');
   const stageContainer = document.getElementById('stage-canvas-host');
   const formulaLensHost = document.getElementById('formula-lens-host');
   const sharedPanelHost = document.getElementById('shared-panel-host');
@@ -92,7 +100,9 @@ function bootstrap() {
   function syncSharedPanel(state) {
     const moduleId = state.activeModule;
     const needsSharedEditor =
-      moduleId === 'mod2' || (moduleId === 'mod3' && state.mod3SubMode === 'general');
+      moduleId === 'mod2' ||
+      moduleId === 'mod4' ||
+      (moduleId === 'mod3' && state.mod3SubMode === 'general');
     const allowNegative = moduleId !== 'mod3';
 
     if (needsSharedEditor) {
@@ -123,23 +133,14 @@ function bootstrap() {
       stage,
       store,
       controlsHost,
-      formulaLens
+      formulaLens,
+      upperHost,
+      stagePane
     });
 
     if (activeInstance) {
       formulaLensHost.style.display = 'block';
       activeInstance.init();
-    } else {
-      formulaLensHost.style.display = 'none';
-      stage.setCameraHome([5.2, 4.6, 8.2], [0.5, 0.35, 0]);
-      const meta = MODULE_LIST.find((m) => m.id === moduleId);
-      controlsHost.innerHTML = `
-        <section class="glass-card">
-          <p class="eyebrow">NEXT MILESTONE</p>
-          <h2 class="card-title">${meta ? `${meta.shortLabel}：${meta.title}` : moduleId}</h2>
-          <p class="notice-text">此模組將於後續階段實作；目前可使用下方儀表板驗證多珠資料集三軌變異數演算法。</p>
-        </section>
-      `;
     }
   }
 
@@ -162,6 +163,9 @@ function bootstrap() {
         prevState.formulaMode === state.formulaMode &&
         prevState.mod3SubMode === state.mod3SubMode &&
         prevState.timelineStep === state.timelineStep &&
+        prevState.binomialN === state.binomialN &&
+        prevState.binomialX === state.binomialX &&
+        prevState.showAtLeastOne === state.showAtLeastOne &&
         prevState.beads === state.beads;
 
       if (onlyHoverChanged) {
@@ -189,13 +193,7 @@ function bootstrap() {
 
     const modMeta = MODULE_LIST.find((m) => m.id === state.activeModule);
     if (stageBadge && modMeta) {
-      const ready =
-        state.activeModule === 'mod1' ||
-        state.activeModule === 'mod2' ||
-        state.activeModule === 'mod3';
-      stageBadge.textContent = ready
-        ? `Phase 3 ｜ ${modMeta.shortLabel}：${modMeta.title}`
-        : `Phase 3 預備 ｜ ${modMeta.shortLabel}：${modMeta.title}`;
+      stageBadge.textContent = `${modMeta.shortLabel}：${modMeta.title}`;
     }
 
     dashboard.update(state);

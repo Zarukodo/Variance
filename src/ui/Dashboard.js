@@ -197,21 +197,28 @@ export class Dashboard {
     const piControl = this.container.querySelector('[data-role="pi-control"]');
     const presetBar = this.container.querySelector('.preset-bar');
 
-    piControl.style.display = state.activeModule === 'mod5' ? 'block' : 'none';
-    presetBar.style.display =
-      isBernoulliView || state.activeModule === 'mod2' || state.activeModule === 'mod3'
-        ? 'none'
-        : 'block';
+    piControl.style.display = 'none';
+    presetBar.style.display = 'none';
 
     const piSlider = this.container.querySelector('[data-role="pi-slider"]');
     const piValue = this.container.querySelector('[data-role="pi-value"]');
     piSlider.value = String(state.bernoulliPi);
     piValue.textContent = state.bernoulliPi.toFixed(2);
 
-    // 依目前模組決定受檢驗的分佈：模組一驗算雙珠 {0,1}，其餘驗算 store.beads
-    const activeBeads = isBernoulliView
-      ? computeBernoulliMetrics(state.bernoulliPi).beads
-      : state.beads;
+    // 依目前模組決定受檢驗的分佈：單次二項 {0,1}、二項分佈 {0..n} 或共享多珠 store.beads
+    let activeBeads;
+    if (isBernoulliView) {
+      activeBeads = computeBernoulliMetrics(state.bernoulliPi).beads;
+    } else if (state.activeModule === 'mod5') {
+      const n = Math.max(1, Math.floor(state.binomialN || 1));
+      activeBeads = Array.from({ length: n + 1 }, (_, k) => ({
+        id: `bin${k}`,
+        x: k,
+        p: computeBinomialMetrics(n, k, state.bernoulliPi).probX
+      }));
+    } else {
+      activeBeads = state.beads;
+    }
 
     const metrics = computeAllMetrics(activeBeads, state.pivotOverride);
 
@@ -239,8 +246,8 @@ export class Dashboard {
     } else if (state.activeModule === 'mod5') {
       const bin = computeBinomialMetrics(state.binomialN, state.binomialX, state.bernoulliPi);
       summaryEl.textContent =
-        `模組 5 準備中（n=${bin.n}, x=${bin.x}, π=${bin.pi.toFixed(2)}）：` +
-        `目前儀表板同步驗算通用多珠數據（共 ${metrics.beads.length} 顆珠子），二項總期望值 nπ = ${bin.mu.toFixed(2)}、總變異數 nπ(1−π) = ${bin.variance.toFixed(4)}。`;
+        `目前檢視模組 5（二項分佈 B(n=${bin.n}, π=${bin.pi.toFixed(2)})）：` +
+        `儀表板直接對完整分佈 {0…${bin.n}} 進行三軌變異數驗算，理論期望值 nπ = ${bin.mu.toFixed(2)}、理論變異數 nπ(1−π) = ${bin.variance.toFixed(6)}。`;
     } else {
       const coords = metrics.beads.map((b) => `(${b.x}, ${b.p.toFixed(2)})`).join('、');
       summaryEl.textContent = `目前共享多珠資料集（lockDataset=${state.lockDataset ? 'ON' : 'OFF'}）：${coords}。`;

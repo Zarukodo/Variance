@@ -40,19 +40,23 @@
     </header>
 
     <main class="workspace-grid">
-      <section class="stage-pane" aria-label="3D 空間舞台">
-        <div id="stage-canvas-host" class="stage-canvas-host"></div>
+      <section id="stage-pane" class="stage-pane" aria-label="3D 空間舞台">
+        <div id="mod5-upper-stage" class="mod5-upper-stage" style="display:none;"></div>
 
-        <div class="stage-hud-top">
-          <div id="stage-phase-badge" class="hud-pill">Phase 0 引擎啟動中...</div>
-          <div class="stage-hud-actions">
-            <button id="btn-camera-mode" type="button" class="hud-btn">2D 俯視（正交）</button>
-            <button id="btn-reset-camera" type="button" class="hud-btn">重置視角</button>
+        <div class="stage-webgl-wrap">
+          <div id="stage-canvas-host" class="stage-canvas-host"></div>
+
+          <div class="stage-hud-top">
+            <div id="stage-phase-badge" class="hud-pill">Phase 0 引擎啟動中...</div>
+            <div class="stage-hud-actions">
+              <button id="btn-camera-mode" type="button" class="hud-btn">2D 俯視（正交）</button>
+              <button id="btn-reset-camera" type="button" class="hud-btn">重置視角</button>
+            </div>
           </div>
-        </div>
 
-        <div class="stage-hud-bottom">
-          <div class="hud-pill">左鍵拖曳旋轉 ｜ 右鍵平移 ｜ 滾輪縮放</div>
+          <div class="stage-hud-bottom">
+            <div class="hud-pill">左鍵拖曳旋轉 ｜ 右鍵平移 ｜ 滾輪縮放</div>
+          </div>
         </div>
       </section>
 
